@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced HTML Parser with Data Extraction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+        }
+        /* Tab styles */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ccc;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            background: #e0e0e0;
+            margin-right: 5px;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+        }
+        .tab.active {
+            background: #fff;
+            font-weight: bold;
+            border-bottom: 2px solid #fff;
+        }
+        .tab-content {
+            display: none;
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        /* Input Section */
+        .input-section textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .input-section input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+        .input-section button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .input-section button:hover {
+            background: #218838;
+        }
+        /* Output Sections */
+        .tree {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        .tree li {
+            margin: 5px 0;
+            position: relative;
+        }
+        .tree li::before {
+            content: "";
+            position: absolute;
+            top: 10px;
+            left: -20px;
+            border-left: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            width: 20px;
+            height: 20px;
+        }
+        .tree li::after {
+            position: absolute;
+            content: "";
+            top: 30px;
+            left: -20px;
+            border-left: 1px solid #ccc;
+            height: 100%;
+        }
+        .tree li:last-child::after {
+            display: none;
+        }
+        .tag {
+            font-weight: bold;
+            color: #333;
+        }
+        .attributes {
+            color: #555;
+            font-size: 14px;
+        }
+        /* Tag Profiling Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        table th {
+            background-color: #f2f2f2;
+            text-align: left;
+        }
+        /* Loader */
+        .loader {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Error Message */
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        /* Viewer Tab */
+        #viewerContent {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        /* Highlight selected tag */
+        .tag.selected {
+            background-color: #d3d3d3;
+        }
+        /* Extract Data Button */
+        #extractButton {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #extractButton:hover {
+            background: #0056b3;
+        }
+        /* Extraction Section */
+        #extractionResult {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        /* Copy and Download Buttons */
+        .action-buttons {
+            margin-top: 10px;
+        }
+        .action-buttons button {
+            padding: 8px 12px;
+            margin-right: 10px;
+            background: #17a2b8;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .action-buttons button:hover {
+            background: #138496;
+        }
+    </style>
+</head>
+<body>
+    <h1>Advanced HTML Parser with Data Extraction</h1>
+    <div class="tabs">
+        <div class="tab active" data-tab="input">Input</div>
+        <div class="tab" data-tab="profile">Tag Profiling</div>
+        <div class="tab" data-tab="hierarchy">Tag Hierarchy</div>
+        <div class="tab" data-tab="viewer">Viewer</div>
+        <div class="tab" data-tab="extract">Extract Data</div>
+    </div>
+    <div class="tab-content active" id="input">
+        <div class="input-section">
+            <h2>Enter HTML or URL</h2>
+            <textarea id="htmlInput" placeholder="Paste your HTML here...">
+<div id="main">
+    <h1 class="title">Hello World</h1>
+    <p>Sample paragraph with <a href="#">link</a>.</p>
+    <img src="image.png" alt="Sample Image" />
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Age</th>
+        </tr>
+        <tr>
+            <td>Alice</td>
+            <td>30</td>
+        </tr>
+        <tr>
+            <td>Bob</td>
+            <td>25</td>
+        </tr>
+    </table>
+    <ul>
+        <li>Item 1
+            <ul>
+                <li>Subitem 1a</li>
+                <li>Subitem 1b</li>
+            </ul>
+        </li>
+        <li>Item 2</li>
+    </ul>
+</div>
+            </textarea>
+            <p>OR</p>
+            <input type="text" id="urlInput" placeholder="Enter URL to fetch HTML">
+            <button id="parseButton">Parse HTML</button>
+            <div class="loader" id="loader"></div>
+            <div class="error" id="errorMsg"></div>
+        </div>
+    </div>
+    <div class="tab-content" id="profile">
+        <h2>Tag Profiling</h2>
+        <div id="tagProfile">No data available. Please parse HTML first.</div>
+    </div>
+    <div class="tab-content" id="hierarchy">
+        <h2>Tag Hierarchy</h2>
+        <ul id="tagTree" class="tree">No data available. Please parse HTML first.</ul>
+    </div>
+    <div class="tab-content" id="viewer">
+        <h2>Viewer</h2>
+        <iframe id="viewerContent" sandbox="allow-same-origin"></iframe>
+    </div>
+    <div class="tab-content" id="extract">
+        <h2>Extract Data</h2>
+        <div id="extractSection">
+            <p>Select a tag from the Tag Hierarchy or Tag Profiling tab to extract data.</p>
+        </div>
+    </div>
+
+    <script>
+        // Classes
+        class HTMLNode {
+            constructor(tagName = 'root', attributes = {}, parent = null, textContent = '') {
+                this.tagName = tagName;
+                this.attributes = attributes;
+                this.children = [];
+                this.parent = parent;
+                this.textContent = textContent;
+            }
+
+            addChild(child) {
+                this.children.push(child);
+            }
+        }
+
+        class TagProfile {
+            constructor() {
+                this.count = 0;
+                this.attributes = new Map();
+            }
+
+            increment(attrName = null) {
+                this.count += 1;
+                if (attrName) {
+                    if (this.attributes.has(attrName)) {
+                        this.attributes.set(attrName, this.attributes.get(attrName) + 1);
+                    } else {
+                        this.attributes.set(attrName, 1);
+                    }
+                }
+            }
+        }
+
+        class HTMLParser {
+            constructor() {
+                this.root = new HTMLNode();
+                this.tagMap = new Map();
+            }
+
+            parse(html) {
+                const tagRegex = /<\/?([a-zA-Z0-9]+)([^>]*)>|([^<]+)/g;
+                const stack = [this.root];
+                let match;
+
+                while ((match = tagRegex.exec(html))) {
+                    if (match[3]) {
+                        // Text node
+                        const text = match[3].trim();
+                        if (text) {
+                            const textNode = new HTMLNode('#text', {}, stack[stack.length - 1], text);
+                            stack[stack.length - 1].addChild(textNode);
+                        }
+                        continue;
+                    }
+
+                    const isClosing = match[0].startsWith('</');
+                    const tagName = match[1];
+                    const attrString = match[2].trim();
+
+                    if (isClosing) {
+                        if (stack.length > 1) { // Prevent popping the root
+                            stack.pop();
+                        }
+                    } else {
+                        const attributes = this.parseAttributes(attrString);
+                        const node = new HTMLNode(tagName, attributes, stack[stack.length - 1]);
+                        stack[stack.length - 1].addChild(node);
+                        this.updateTagMap(tagName, attributes);
+
+                        if (!this.isSelfClosing(tagName, attrString)) {
+                            stack.push(node);
+                        }
+                    }
+                }
+            }
+
+            parseAttributes(attrString) {
+                const attrs = {};
+                const attrRegex = /([a-zA-Z\-:]+)(?:="([^"]*)")?/g;
+                let match;
+                while ((match = attrRegex.exec(attrString))) {
+                    attrs[match[1]] = match[2] || null;
+                }
+                return attrs;
+            }
+
+            isSelfClosing(tagName, attrString) {
+                return /\/\s*$/.test(attrString) || ['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'].includes(tagName.toLowerCase());
+            }
+
+            updateTagMap(tagName, attributes) {
+                if (!this.tagMap.has(tagName)) {
+                    this.tagMap.set(tagName, new TagProfile());
+                }
+                const profile = this.tagMap.get(tagName);
+                profile.increment();
+                for (let attr in attributes) {
+                    profile.increment(attr);
+                }
+            }
+
+            getTagCount(tagName) {
+                return this.tagMap.has(tagName) ? this.tagMap.get(tagName).count : 0;
+            }
+
+            hasTag(tagName) {
+                return this.tagMap.has(tagName);
+            }
+
+            traverse(node = this.root, callback) {
+                callback(node);
+                node.children.forEach(child => this.traverse(child, callback));
+            }
+        }
+
+        // UI Functions
+        function switchTab(event) {
+            const selectedTab = event.target.getAttribute('data-tab');
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.toggle('active', tab.getAttribute('data-tab') === selectedTab);
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === selectedTab);
+            });
+        }
+
+        function createTreeElement(node) {
+            if (node.tagName === 'root') {
+                const fragment = document.createDocumentFragment();
+                node.children.forEach(child => {
+                    fragment.appendChild(createTreeElement(child));
+                });
+                return fragment;
+            }
+
+            const li = document.createElement('li');
+            li.dataset.tagName = node.tagName; // Store tag name
+
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'tag';
+            tagSpan.textContent = `<${node.tagName}>`;
+            tagSpan.style.cursor = 'pointer';
+            tagSpan.addEventListener('click', (event) => {
+                selectTag(node, event);
+            });
+            li.appendChild(tagSpan);
+
+            if (Object.keys(node.attributes).length > 0) {
+                const attrSpan = document.createElement('span');
+                attrSpan.className = 'attributes';
+                const attrs = Object.entries(node.attributes).map(([key, value]) => `${key}="${value}"`).join(' ');
+                attrSpan.textContent = ` ${attrs}`;
+                li.appendChild(attrSpan);
+            }
+
+            if (node.children.length > 0) {
+                const ul = document.createElement('ul');
+                node.children.forEach(child => {
+                    ul.appendChild(createTreeElement(child));
+                });
+                li.appendChild(ul);
+            }
+
+            return li;
+        }
+
+        function displayTagProfile(tagMap) {
+            const profileDiv = document.getElementById('tagProfile');
+            profileDiv.innerHTML = '';
+            const table = document.createElement('table');
+
+            const headerRow = document.createElement('tr');
+            ['Tag', 'Count', 'Attributes'].forEach(text => {
+                const th = document.createElement('th');
+                th.textContent = text;
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+
+            tagMap.forEach((profile, tag) => {
+                const row = document.createElement('tr');
+
+                const tagCell = document.createElement('td');
+                tagCell.textContent = tag;
+                row.appendChild(tagCell);
+
+                const countCell = document.createElement('td');
+                countCell.textContent = profile.count;
+                row.appendChild(countCell);
+
+                const attrCell = document.createElement('td');
+                const attrs = Array.from(profile.attributes.entries()).map(([attr, count]) => `${attr}: ${count}`).join(', ');
+                attrCell.textContent = attrs || 'None';
+                row.appendChild(attrCell);
+
+                table.appendChild(row);
+            });
+
+            profileDiv.appendChild(table);
+        }
+
+        function renderViewer(htmlContent) {
+            const viewerFrame = document.getElementById('viewerContent');
+            // Using srcdoc to safely render HTML
+            viewerFrame.srcdoc = htmlContent;
+        }
+
+        // Helper Function to Extract <body> Content
+        function extractBodyContent(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            if (doc.body) {
+                return doc.body.innerHTML;
+            } else {
+                return html; // Fallback to full HTML if <body> not found
+            }
+        }
+
+        // Variables to manage selection
+        let selectedTag = null;
+
+        function selectTag(node, event) {
+            selectedTag = node;
+            // Highlight selected tag in the hierarchy
+            document.querySelectorAll('.tag').forEach(tag => tag.classList.remove('selected'));
+            event.target.classList.add('selected');
+            // Update Extract Data tab content
+            updateExtractSection();
+            // Switch to Extract Data tab
+            switchToTab('extract');
+        }
+
+        function updateExtractSection() {
+            const extractSection = document.getElementById('extractSection');
+            if (!selectedTag) {
+                extractSection.innerHTML = '<p>No tag selected.</p>';
+                return;
+            }
+
+            extractSection.innerHTML = `
+                <h3>Selected Tag: &lt;${selectedTag.tagName}&gt;</h3>
+                <label for="outputFormat">Choose Output Format:</label>
+                <select id="outputFormat">
+                    <option value="csv">CSV</option>
+                    <option value="hierarchical">Hierarchical List</option>
+                    <option value="fixed">Fixed-Length</option>
+                </select>
+                <button id="extractButton">Extract</button>
+                <div id="extractionResult"></div>
+            `;
+
+            document.getElementById('extractButton').addEventListener('click', () => {
+                const format = document.getElementById('outputFormat').value;
+                extractData(selectedTag, format);
+            });
+        }
+
+        function switchToTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.toggle('active', tab.getAttribute('data-tab') === tabName);
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === tabName);
+            });
+        }
+
+        // Data Extraction Functions
+        function extractData(node, format) {
+            let data = '';
+            switch(format) {
+                case 'csv':
+                    data = extractCSV(node);
+                    if (data.startsWith('Unsupported')) {
+                        alert(data);
+                    } else {
+                        displayExtractionResult(data, 'csv');
+                    }
+                    break;
+                case 'hierarchical':
+                    data = extractHierarchical(node);
+                    displayExtractionResult(data, 'txt');
+                    break;
+                case 'fixed':
+                    data = extractFixedLength(node);
+                    if (data.startsWith('Unsupported')) {
+                        alert(data);
+                    } else {
+                        displayExtractionResult(data, 'txt');
+                    }
+                    break;
+                default:
+                    alert('Unsupported format.');
+            }
+        }
+
+        function extractCSV(node) {
+            if (node.tagName.toLowerCase() === 'table') {
+                const rows = [];
+                node.children.forEach(tr => {
+                    if (tr.tagName.toLowerCase() === 'tr') {
+                        const cols = [];
+                        tr.children.forEach(td => {
+                            if (td.tagName.toLowerCase() === 'td' || td.tagName.toLowerCase() === 'th') {
+                                const text = extractText(td);
+                                // Escape double quotes by doubling them
+                                const escapedText = text.replace(/"/g, '""');
+                                cols.push(`"${escapedText}"`);
+                            }
+                        });
+                        rows.push(cols.join(','));
+                    }
+                });
+                return rows.join('\n');
+            } else if (node.tagName.toLowerCase() === 'ul' || node.tagName.toLowerCase() === 'ol') {
+                const items = [];
+                node.children.forEach(li => {
+                    const text = extractText(li);
+                    items.push(`"${text}"`);
+                });
+                return items.join('\n');
+            }
+            return 'Unsupported tag for CSV extraction.';
+        }
+
+        function extractHierarchical(node, depth = 0) {
+            let result = '';
+            const indent = '  '.repeat(depth);
+            if (node.tagName.toLowerCase() === 'ul' || node.tagName.toLowerCase() === 'ol') {
+                node.children.forEach(li => {
+                    const text = extractText(li);
+                    result += `${indent}- ${text}\n`;
+                    // Check for nested lists
+                    li.children.forEach(child => {
+                        if (child.tagName.toLowerCase() === 'ul' || child.tagName.toLowerCase() === 'ol') {
+                            result += extractHierarchical(child, depth + 1);
+                        }
+                    });
+                });
+            }
+            return result;
+        }
+
+        function extractFixedLength(node) {
+            // Example: Fixed-length records with each field 20 characters
+            if (node.tagName.toLowerCase() === 'table') {
+                let fixedData = '';
+                node.children.forEach(tr => {
+                    if (tr.tagName.toLowerCase() === 'tr') {
+                        tr.children.forEach(td => {
+                            if (td.tagName.toLowerCase() === 'td' || td.tagName.toLowerCase() === 'th') {
+                                const text = extractText(td);
+                                fixedData += text.padEnd(20).substring(0, 20);
+                            }
+                        });
+                        fixedData += '\n';
+                    }
+                });
+                return fixedData;
+            }
+            return 'Unsupported tag for Fixed-Length extraction.';
+        }
+
+        function extractText(node) {
+            if (node.tagName === '#text') {
+                return node.textContent.trim();
+            }
+            return node.children.map(child => extractText(child)).join(' ').trim();
+        }
+
+        function displayExtractionResult(data, format) {
+            const resultDiv = document.getElementById('extractionResult');
+            resultDiv.innerHTML = `
+                <textarea id="extractedData" style="width: 100%; height: 200px;">${data}</textarea>
+                <div class="action-buttons">
+                    <button id="copyButton">Copy</button>
+                    <button id="downloadButton">Download</button>
+                </div>
+            `;
+
+            // Copy Button
+            document.getElementById('copyButton').addEventListener('click', () => {
+                const extractedData = document.getElementById('extractedData');
+                extractedData.select();
+                document.execCommand('copy');
+                alert('Data copied to clipboard!');
+            });
+
+            // Download Button
+            document.getElementById('downloadButton').addEventListener('click', () => {
+                let filename = 'data.txt';
+                let mimeType = 'text/plain';
+                if (format === 'csv') {
+                    filename = 'data.csv';
+                    mimeType = 'text/csv';
+                }
+                downloadData(data, filename, mimeType);
+            });
+        }
+
+        function downloadData(data, filename, type) {
+            const blob = new Blob([data], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a); // Required for Firefox
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Event Listeners
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', switchTab);
+        });
+
+        document.getElementById('parseButton').addEventListener('click', async () => {
+            const htmlInput = document.getElementById('htmlInput').value.trim();
+            const urlInput = document.getElementById('urlInput').value.trim();
+            const loader = document.getElementById('loader');
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.textContent = '';
+            loader.style.display = 'block';
+
+            let htmlContent = '';
+            let viewerContent = '';
+
+            try {
+                if (urlInput) {
+                    // Fetch HTML from URL
+                    const response = await fetch(urlInput);
+                    if (!response.ok) {
+                        throw new Error(`Error fetching URL: ${response.status} ${response.statusText}`);
+                    }
+                    htmlContent = await response.text();
+
+                    // Extract <body> content for viewer
+                    viewerContent = extractBodyContent(htmlContent);
+                } else if (htmlInput) {
+                    // Use pasted HTML
+                    htmlContent = htmlInput;
+                    viewerContent = htmlContent; // Render as is
+                } else {
+                    throw new Error('Please provide HTML input or a URL.');
+                }
+
+                const parser = new HTMLParser();
+                parser.parse(htmlContent);
+
+                // Display Tag Profiling
+                const profileTab = document.querySelector('.tab[data-tab="profile"]');
+                profileTab.textContent = 'Tag Profiling';
+                displayTagProfile(parser.tagMap);
+
+                // Display Tag Hierarchy
+                const tagTree = document.getElementById('tagTree');
+                tagTree.innerHTML = '';
+                const treeElements = createTreeElement(parser.root);
+                tagTree.appendChild(treeElements);
+
+                // Render Viewer
+                renderViewer(viewerContent);
+
+            } catch (error) {
+                errorMsg.textContent = error.message;
+                // Clear previous results
+                document.getElementById('tagProfile').innerHTML = 'No data available. Please parse HTML first.';
+                document.getElementById('tagTree').innerHTML = 'No data available. Please parse HTML first.';
+                renderViewer(''); // Clear viewer
+            } finally {
+                loader.style.display = 'none';
+            }
+        });
+
+        // Initial parse on page load
+        window.onload = () => {
+            document.getElementById('parseButton').click();
+        };
+    </script>
+</body>
+</html>
