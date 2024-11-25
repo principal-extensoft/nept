@@ -1,0 +1,216 @@
+import { Component, computed, input, EventEmitter, inject, signal, ViewChild, OnInit } from '@angular/core';
+import { GlobalStateStoreService } from '@etdms-core/services/global-state-store.service';
+import { MyAppButtonComponent } from '@MyApp-common/components/button/button.component';
+import { IconButtonComponent } from '@myapp-common/components/button/icon/icon-button';
+import { myappSort } from '@myapp-common/services/grid-view-sort.service';
+import { SortOrder } from '@myapp-common/components/sortable-table-header/sortable-table-header.component';
+import { SortHeader } from '@myapp-core/models/api-request-response-model';
+import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
+import { GridViewModule } from '@myapp-common/components/grid-view/module';
+import { GridViewData } from '@myapp-common/models/grid-view-model';
+import { IconComponent } from '@myapp-common/components/icon/icon.component';
+import { PaginatorComponent } from '@myapp-common/components/paginator/paginator.component';
+import { LoadingIndicatorDirective } from '@myapp-common/directives/loading-indicator.directive';
+import { DatePipe } from '@angular/common';
+import { ActionMenuService } from '@myapp-core/services/action-menu.service';
+import { ActionGroup } from '@myapp-core/models/action-menu.model';
+import { Widget } from '@myapp-features/recycle-bin/models/recycled-case';
+import { MyDomainApiService } from '@myapp-features/recycle-bin/services/recycle-bin-api.service';
+import { UserPref } from '@myapp-core/models/default-app-config-model';
+import { mapToWidget } from '@myapp-features/recycle-bin/models/recycle-bin-mapper';
+import { OptionalHttpHeaders } from '@myapp-core/services/api.service';
+import { constructPaginationHttpHeaderWithSorting } from '@myapp-common/services/util-services';
+import { BehaviorSubject } from 'rxjs';
+import { GridViewDataSource } from '@myapp-common/services/grid-view-data.service';
+
+@Component({
+  selector: 'myapp-recycle-bin-cases',
+  standalone: true,
+  templateUrl: './recycle-bin-cases.component.html',
+  styleUrl: './recycle-bin-cases.component.scss',
+  imports: [
+    GridViewModule,
+    PaginatorComponent,
+    myappButtonComponent,
+    IconComponent,
+    IconButtonComponent,
+    LoadingIndicatorDirective,
+    DatePipe
+  ],
+})
+
+export class MyDomainCasesComponent implements OnInit {
+
+  pageSizeChanged: boolean = false;
+  pageSizeFromPageEvent: number = 0;
+  sortHeader: SortHeader = { sortBy: 'modified', ascending: 'false' };
+  itemPerPage: number = 0;
+  previousPageSize: number = 0;
+  isLoading = signal(false);
+  items: Widget[] = [];
+  totalCount: number = 0;
+  tableCaption: string = "Recycled widgets";
+  defaultHttpHeaders: OptionalHttpHeaders = {
+    "sortBy": "modified",
+    "ascending": "false",
+    "amount": "10",
+    "offset": "0"
+  };
+  public pageIndex: string = "0";
+  private menuActionsSingle: ActionGroup[] = [{
+    actions: [{ value: "view-widget-properties", text: "View widget Properties", helpLink: "", iconName: "circle-check" },
+    { value: "restore-widget", text: 'Restore', helpLink: "", iconName: "circle-close" },
+    { value: "permanently-delete-widget", text: 'Permanently Delete', helpLink: "", iconName: "circle-close" },
+    { value: "export-to-excel", text: 'Export to Excel', helpLink: "", iconName: "circle-close" }]
+  }];
+
+  private menuActionsMany: ActionGroup[] = [{
+    actions: [{ value: "permanently-delete-widget", text: 'Permanently Delete', helpLink: "", iconName: "circle-close" },
+    { value: "restore-widget-to", text: 'Restore to...', helpLink: "", iconName: "circle-close" },
+    { value: "export-to-excel", text: 'Export to Excel', helpLink: "", iconName: "circle-close" }]
+  }];
+
+
+  public datasource = new GridViewDataSource<Widget>();
+  private globalStateStoreService = inject(GlobalStateStoreService);
+  #apiService = inject(MyDomainApiService);
+  private actionService = inject(ActionMenuService);
+  defaultItemsPerPage: number = (this.globalStateStoreService.getAppConfigValueByKey('user_prefs') as UserPref).results_per_page;
+  pageOptions: number[] = this.globalStateStoreService.getAppConfigValueByKey('pager_items_per_page') as number[];
+  selectedRowIds = signal<string[]>([]);
+  purgeDateOffset = this.globalStateStoreService.getAppConfigValueByKey('recycled_widget_autopurge_offset') as number;
+
+  @ViewChild(PaginatorComponent) paginator: PaginatorComponent;
+
+  constructor() {
+    this.paginator = new PaginatorComponent(new MatPaginatorIntl);
+  }
+
+  ngOnInit(): void {
+    this.getItems(this.defaultHttpHeaders);
+  }
+
+  getItems(headers: OptionalHttpHeaders) {
+    this.isLoading.set(true);
+    this.#apiService.getWidgets(headers).subscribe(response => {
+      this.items = [];
+      const count = response.responseProperties?.resultCount;
+      if (count !== undefined) {
+        this.totalCount = count;
+      }
+      if (response.resources &&
+        response.resources.resource.length > 0) {
+        response.resources.resource.forEach(model => {
+          const item = mapToWidget(model, this.purgeDateOffset);
+          this.items?.push(item);
+        });
+      }
+      this.isLoading.set(false);
+    });
+  }
+
+  handleColumnSortChanged($event: OptionalHttpHeaders) {
+    this.defaultHttpHeaders = $event;
+    switch ($event['sortBy'].toLowerwidget()) {
+      widget 'deleted':
+        this.defaultHttpHeaders['sortBy'] = 'modified';
+        break;
+      widget 'primaryssn':
+        this.defaultHttpHeaders['sortBy'] = 'handlessn';
+        break;
+      default:
+        break;
+    }
+    this.getItems(this.defaultHttpHeaders);
+  }
+
+  handleSelectedItemsChanged($event: GridViewData<Widget>[]) {
+    this.actionService.actions = this.setSelectedActionsWithData($event);
+    this.selectedRowIds.update(state => {
+      return [...$event].map(data => data.id);
+    });
+  }
+
+  private setSelectedActionsWithData(records: GridViewData<Widget>[]) {
+    const selectedItems = Array.isArray(records) ? records : [records];
+    const count = selectedItems.length;
+    const menuActions: ActionGroup[] = (count === 0)
+      ? []
+      : (count === 1)
+        ? this.menuActionsSingle
+        : this.menuActionsMany;
+    menuActions.forEach(action => {
+      for (let _action of action.actions) {
+        _action.selectedItems = selectedItems;
+      }
+    });
+    return menuActions;
+  }
+
+
+  private pagination$ = new BehaviorSubject<PageEvent>({
+    pageIndex: 0,
+    pageSize: this.itemPerPage,
+    length: 0
+  });
+
+  onPaginationEvent($event: PageEvent) {
+    this.pagination$.next($event);
+    const optionalHeaders = constructPaginationHttpHeaderWithSorting($event, this.totalCount, this.previousPageSize !== $event.pageSize, this.sortHeader.sortBy, this.sortHeader.ascending as SortOrder);
+
+    this.pageSizeFromPageEvent = $event.pageSize;
+    if (this.previousPageSize !== $event.pageSize) {
+      this.previousPageSize = $event.pageSize;
+      this.pageSizeChanged = true;
+      this.handleColumnSortChanged(optionalHeaders);
+      //this.sortColumnChanged.emit(optionalHeaders);
+    } else {
+      this.handleColumnSortChanged(optionalHeaders);
+      //this.sortColumnChanged.emit(optionalHeaders);
+      this.pageSizeChanged = false;
+    }
+  }
+
+
+  computedDatasource = computed(() => {
+    const items = this.items;
+    this.datasource.data = items.map(item => {
+      const model: GridViewData<Widget> = {
+        id: `${item.id}`,
+        data: item
+      };
+      return model;
+    });
+    return this.datasource;
+  });
+
+  dataGridLoading: boolean = false;
+
+  getSelectedIds($event: number[]) {
+    console.log();
+  }
+
+
+  handleSorting($event: myappSort) {
+    this.dataGridLoading = true;
+    const currentSortOrder: SortHeader = { sortBy: $event.id, ascending: $event.start + '' };
+    this.sortHeader = currentSortOrder;
+    const headers: OptionalHttpHeaders = { 'sortBy': currentSortOrder.sortBy, 'ascending': `${currentSortOrder.ascending === 'asc'}` };
+    const currentPageSize = this.pageSizeFromPageEvent > 0 ? this.pageSizeFromPageEvent : 10;
+    this.paginator.load(currentPageSize);
+    this.dataGridLoading = false;
+  }
+
+  isSelected = (id: string) => {
+    return this.selectedRowIds().includes(id);
+  };
+
+  handleSelection($event: GridViewData<Widget>[]) {
+    this.handleSelectedItemsChanged($event);
+  }
+
+
+
+
+
+}
