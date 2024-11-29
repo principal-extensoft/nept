@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced HTML Parser with Data Extraction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+        }
+        /* Tab styles */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ccc;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            background: #e0e0e0;
+            margin-right: 5px;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+        }
+        .tab.active {
+            background: #fff;
+            font-weight: bold;
+            border-bottom: 2px solid #fff;
+        }
+        .tab-content {
+            display: none;
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        /* Input Section */
+        .input-section textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .input-section input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+        .input-section button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .input-section button:hover {
+            background: #218838;
+        }
+        /* Output Sections */
+        .tree {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        .tree li {
+            margin: 5px 0;
+            position: relative;
+        }
+        .tree li::before {
+            content: "";
+            position: absolute;
+            top: 10px;
+            left: -20px;
+            border-left: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            width: 20px;
+            height: 20px;
+        }
+        .tree li::after {
+            position: absolute;
+            content: "";
+            top: 30px;
+            left: -20px;
+            border-left: 1px solid #ccc;
+            height: 100%;
+        }
+        .tree li:last-child::after {
+            display: none;
+        }
+        .tag {
+            font-weight: bold;
+            color: #333;
+        }
+        .attributes {
+            color: #555;
+            font-size: 14px;
+        }
+        /* Tag Profiling Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        table th {
+            background-color: #f2f2f2;
+            text-align: left;
+        }
+        /* Loader */
+        .loader {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Error Message */
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        /* Viewer Tab */
+        #viewerContent {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        /* Highlight selected tag */
+        .tag.selected {
+            background-color: #d3d3d3;
+        }
+        /* Extract Data Button */
+        #extractButton {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #extractButton:hover {
+            background: #0056b3;
+        }
+        /* Extraction Section */
+        #extractionResult {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        /* Copy and Download Buttons */
+        .action-buttons {
+            margin-top: 10px;
+        }
+        .action-buttons button {
+            padding: 8px 12px;
+            margin-right: 10px;
+            background: #17a2b8;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .action-buttons button:hover {
+            background: #138496;
+        }
+        /* Formatter Options */
+        .formatter-options {
+            margin-top: 10px;
+        }
+        .formatter-options label {
+            display: block;
+            margin-top: 10px;
+        }
+        .formatter-options select, .formatter-options input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Advanced HTML Parser with Data Extraction</h1>
+    <div class="tabs">
+        <div class="tab active" data-tab="input">Input</div>
+        <div class="tab" data-tab="profile">Tag Profiling</div>
+        <div class="tab" data-tab="hierarchy">Tag Hierarchy</div>
+        <div class="tab" data-tab="viewer">Viewer</div>
+        <div class="tab" data-tab="extract">Extract Data</div>
+    </div>
+    <div class="tab-content active" id="input">
+        <div class="input-section">
+            <h2>Enter HTML or URL</h2>
+            <textarea id="htmlInput" placeholder="Paste your HTML here...">
+<div id="main">
+    <h1 class="title">Hello World</h1>
+    <p>Sample paragraph with <a href="#">link</a>.</p>
+    <img src="image.png" alt="Sample Image" />
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Age</th>
+            <th>ZipCode</th>
+        </tr>
+        <tr>
+            <td>
+                <div>Alice</div>
+            </td>
+            <td>30</td>
+            <td>
+                <span>03450</span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <a href="#">Bob</a>
+            </td>
+            <td>25</td>
+            <td>
+                <div>
+                    <span>01234</span>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <ul>
+        <li>Item 1
+            <ul>
+                <li>Subitem 1a</li>
+                <li>Subitem 1b</li>
+            </ul>
+        </li>
+        <li>Item 2</li>
+    </ul>
+</div>
+            </textarea>
+            <p>OR</p>
+            <input type="text" id="urlInput" placeholder="Enter URL to fetch HTML">
+            <button id="parseButton">Parse HTML</button>
+            <div class="loader" id="loader"></div>
+            <div class="error" id="errorMsg"></div>
+        </div>
+    </div>
+    <div class="tab-content" id="profile">
+        <h2>Tag Profiling</h2>
+        <div id="tagProfile">No data available. Please parse HTML first.</div>
+    </div>
+    <div class="tab-content" id="hierarchy">
+        <h2>Tag Hierarchy</h2>
+        <ul id="tagTree" class="tree">No data available. Please parse HTML first.</ul>
+    </div>
+    <div class="tab-content" id="viewer">
+        <h2>Viewer</h2>
+        <iframe id="viewerContent" sandbox="allow-same-origin"></iframe>
+    </div>
+    <div class="tab-content" id="extract">
+        <h2>Extract Data</h2>
+        <div id="extractSection">
+            <p>Select a tag from the Tag Hierarchy or Tag Profiling tab to extract data.</p>
+        </div>
+    </div>
+
+    <script>
+        // --------------------------
+        // Data Extraction Classes
+        // --------------------------
+
+        // Base class for data extraction
+        class DataExtractor {
+            constructor(node) {
+                this.node = node;
+            }
+
+            // Method to extract data, to be overridden by subclasses
+            extract() {
+                return [];
+            }
+
+            // Helper method to extract text content from a node
+            extractText(node) {
+                if (node.tagName === '#text') {
+                    return node.textContent.trim();
+                }
+                if (node.tagName.toLowerCase() === 'br') {
+                    return '\n';
+                }
+                return node.children.map(child => this.extractText(child)).join(' ').trim();
+            }
+        }
+
+        // Extractor for <table> elements
+        class TableExtractor extends DataExtractor {
+            extract() {
+                const tableData = [];
+                const rows = this.getAllRows(this.node);
+        
+                rows.forEach(tr => {
+                    const rowData = [];
+                    const cells = tr.children.filter(child => ['td', 'th'].includes(child.tagName.toLowerCase()));
+                    cells.forEach(td => {
+                        rowData.push(this.extractText(td));
+                    });
+                    tableData.push(rowData);
+                });
+        
+                return tableData;
+            }
+            
+            // Helper method to recursively collect all <tr> elements within the table
+            getAllRows(node) {
+                let trElements = [];
+        
+                node.children.forEach(child => {
+                    if (child.tagName.toLowerCase() === 'tr') {
+                        trElements.push(child);
+                    } else {
+                        // Recursively search for <tr> in child nodes
+                        trElements = trElements.concat(this.getAllRows(child));
+                    }
+                });
+        
+                return trElements;
+            }
+        }
+
+        // Extractor for <ul> and <ol> elements
+        class ListExtractor extends DataExtractor {
+            extract() {
+                const listData = [];
+        
+                this.node.children.forEach(li => {
+                    const itemText = this.extractText(li);
+                    const subLists = li.children.filter(child => ['ul', 'ol'].includes(child.tagName.toLowerCase()));
+                    const subListData = subLists.map(subList => new ListExtractor(subList).extract());
+                    listData.push({ text: itemText, subItems: subListData });
+                });
+        
+                return listData;
+            }
+        }
+
+        // --------------------------
+        // Formatter Classes
+        // --------------------------
+
+        // Base Formatter class
+        class Formatter {
+            format(data) {
+                throw new Error('Format method not implemented.');
+            }
+        }
+
+        // Delimited Formatter
+        class DelimitedFormatter extends Formatter {
+            constructor(options = {}) {
+                super();
+                this.options = options;
+                // Default options
+                this.options = Object.assign({
+                    delimiter: ',', // Default delimiter
+                    quoteChar: '"', // Default quote character
+                    assumeHeader: true, // Assume first row is header
+                    customHeaders: null, // Array of custom header names
+                    lineEnding: '\r\n', // Default to Windows line ending
+                    includeRowNumbers: false, // Option to include row numbers
+                    rootKey: 'data', // Root key for JSON output if needed
+                    columnsToInclude: null, // Array of column indices or names to include
+                    customTransform: null // Function to transform field data
+                }, options);
+            }
+
+            format(data) {
+                if (Array.isArray(data) && Array.isArray(data[0])) {
+                    // Assume table data
+                    return this.formatTable(data);
+                } else if (Array.isArray(data)) {
+                    // Assume list data
+                    return this.formatList(data);
+                }
+                return '';
+            }
+
+            // Formats table data
+            formatTable(tableData) {
+                if (tableData.length === 0) return '';
+
+                let headers = [];
+                let startIndex = 0;
+
+                if (this.options.assumeHeader) {
+                    const rawHeaders = tableData[0];
+                    headers = this.processHeaders(rawHeaders);
+                    startIndex = 1;
+                } else if (this.options.customHeaders) {
+                    headers = this.processHeaders(this.options.customHeaders);
+                } else {
+                    // Generate default headers if no headers are assumed or provided
+                    const numCols = Math.max(...tableData.map(row => row.length));
+                    headers = Array.from({ length: numCols }, (_, i) => `field${i + 1}`);
+                }
+
+                // Validate headers
+                headers = headers.map((header, index) => {
+                    if (!header) {
+                        return `field${index + 1}`;
+                    }
+                    return header;
+                });
+
+                // Handle columns to include/exclude
+                let selectedHeaders = headers;
+                let selectedData = tableData.slice(startIndex);
+
+                if (this.options.columnsToInclude) {
+                    if (Array.isArray(this.options.columnsToInclude)) {
+                        selectedHeaders = this.options.columnsToInclude.map(col => headers[col]);
+                        selectedData = selectedData.map(row => this.options.columnsToInclude.map(col => row[col]));
+                    }
+                }
+
+                // Include row numbers if required
+                if (this.options.includeRowNumbers) {
+                    selectedHeaders.unshift('RowNumber');
+                    selectedData = selectedData.map((row, index) => [index + 1, ...row]);
+                }
+
+                // Apply custom transformations if any
+                if (this.options.customTransform && typeof this.options.customTransform === 'function') {
+                    selectedData = selectedData.map(row => row.map(cell => this.options.customTransform(cell)));
+                }
+
+                // Start building CSV
+                let csv = '';
+
+                // Add headers
+                csv += this.escapeAndJoin(selectedHeaders) + this.options.lineEnding;
+
+                // Add rows
+                selectedData.forEach(row => {
+                    csv += this.escapeAndJoin(row) + this.options.lineEnding;
+                });
+
+                return csv;
+            }
+
+            // Formats list data
+            formatList(listData) {
+                // Flatten list data with indentation to represent hierarchy
+                let csv = '';
+                const traverse = (items, depth = 0) => {
+                    items.forEach(item => {
+                        const indentation = '  '.repeat(depth);
+                        const line = `${indentation}${item.text}`;
+                        csv += this.escapeAndJoin([line]) + this.options.lineEnding;
+                        if (item.subItems && item.subItems.length > 0) {
+                            traverse(item.subItems, depth + 1);
+                        }
+                    });
+                };
+                traverse(listData);
+                return csv;
+            }
+
+            // Escapes and joins fields based on delimiter and quoting rules
+            escapeAndJoin(fields) {
+                return fields.map(field => this.escapeField(field)).join(this.options.delimiter);
+            }
+
+            // Escapes a single field
+            escapeField(field) {
+                if (typeof field !== 'string') {
+                    field = String(field);
+                }
+
+                const needsQuoting = field.includes(this.options.delimiter) ||
+                                     field.includes(this.options.quoteChar) ||
+                                     field.includes('\n') ||
+                                     field.includes('\r');
+
+                if (needsQuoting) {
+                    // Escape quote characters by doubling them
+                    const escaped = field.replace(new RegExp(this.options.quoteChar, 'g'), this.options.quoteChar + this.options.quoteChar);
+                    return `${this.options.quoteChar}${escaped}${this.options.quoteChar}`;
+                }
+
+                return field;
+            }
+
+            // Processes headers to ensure unique and valid CSV headers
+            processHeaders(rawHeaders) {
+                const headers = [];
+                const headerCount = {};
+
+                rawHeaders.forEach((header) => {
+                    // Convert to camelCase
+                    let camelHeader = this.toCamelCase(header);
+
+                    // Remove invalid characters for CSV headers
+                    camelHeader = this.cleanHeader(camelHeader);
+
+                    // Handle duplicate headers
+                    if (headerCount[camelHeader]) {
+                        headerCount[camelHeader] += 1;
+                        camelHeader = `${camelHeader}${headerCount[camelHeader]}`;
+                    } else {
+                        headerCount[camelHeader] = 1;
+                    }
+
+                    headers.push(camelHeader);
+                });
+
+                return headers;
+            }
+
+            // Helper method to convert a string to camelCase
+            toCamelCase(str) {
+                return str
+                    .replace(/[-_\s]+(.)?/g, (_, chr) => (chr ? chr.toUpperCase() : ''))
+                    .replace(/^(.)/, (match) => match.toLowerCase());
+            }
+
+            // Helper method to clean headers by removing invalid CSV header characters
+            cleanHeader(str) {
+                // Remove non-alphanumeric characters
+                return str.replace(/[^a-zA-Z0-9]/g, '');
+            }
+        }
+
+        // Fixed-Length Formatter
+        class FixedLengthFormatter extends Formatter {
+            format(data) {
+                if (!Array.isArray(data) || !Array.isArray(data[0])) return '';
+
+                // Determine column widths based on the longest cell in each column
+                const numCols = data[0].length;
+                const colWidths = Array(numCols).fill(0);
+
+                data.forEach(row => {
+                    row.forEach((cell, index) => {
+                        if (cell.length > colWidths[index]) {
+                            colWidths[index] = cell.length;
+                        }
+                    });
+                });
+
+                // Add 1 to each column width for spacing
+                for (let i = 0; i < colWidths.length; i++) {
+                    colWidths[i] += 1;
+                }
+
+                // Format each row based on the calculated column widths
+                const fixedData = data.map(row => {
+                    return row.map((cell, index) => {
+                        return cell.padEnd(colWidths[index]).substring(0, colWidths[index]);
+                    }).join('');
+                }).join('\n');
+
+                return fixedData;
+            }
+        }
+
+        // JSON Formatter with Enhanced Features
+        class JsonFormatter extends Formatter {
+            constructor(options = {}) {
+                super();
+                this.options = options;
+                // Default options
+                this.options = Object.assign({
+                    assumeHeader: true, // Assume first row is header
+                    customHeaders: null, // Array of custom header names
+                    rootKey: 'data' // Root key for JSON output
+                }, options);
+            }
+
+            format(data) {
+                if (Array.isArray(data) && Array.isArray(data[0])) {
+                    // Assume table data with header row or custom headers
+                    const objects = this.convertTableToObjects(data);
+                    const jsonObject = {};
+                    jsonObject[this.options.rootKey] = objects;
+                    return JSON.stringify(jsonObject, null, 2);
+                } else if (Array.isArray(data)) {
+                    // Assume list data
+                    const jsonObject = {};
+                    jsonObject[this.options.rootKey] = data;
+                    return JSON.stringify(jsonObject, null, 2);
+                }
+                return '';
+            }
+
+            // Converts table data (array of arrays) to array of objects based on header row or custom headers
+            convertTableToObjects(tableData) {
+                if (tableData.length === 0) return [];
+
+                let headers = [];
+
+                if (this.options.assumeHeader) {
+                    const rawHeaders = tableData[0];
+                    headers = this.processHeaders(rawHeaders);
+                    tableData = tableData.slice(1); // Exclude header row from data
+                } else if (this.options.customHeaders) {
+                    headers = this.processHeaders(this.options.customHeaders);
+                } else {
+                    // Generate default headers if no headers are assumed or provided
+                    const numCols = Math.max(...tableData.map(row => row.length));
+                    headers = Array.from({ length: numCols }, (_, i) => `field${i + 1}`);
+                }
+
+                // Validate headers
+                headers = headers.map((header, index) => {
+                    if (!header) {
+                        return `field${index + 1}`;
+                    }
+                    return header;
+                });
+
+                // Iterate over the rest of the rows and map to objects
+                const objects = tableData.map((row, rowIndex) => {
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                        // Assign cell value or null if undefined
+                        obj[header] = row[index] !== undefined ? this.inferType(row[index]) : null;
+                    });
+                    return obj;
+                });
+
+                return objects;
+            }
+
+            // Processes headers to ensure unique and valid JSON keys
+            processHeaders(rawHeaders) {
+                const headers = [];
+                const headerCount = {};
+
+                rawHeaders.forEach((header) => {
+                    // Convert to camelCase
+                    let camelHeader = this.toCamelCase(header);
+
+                    // Remove invalid characters for JSON keys
+                    camelHeader = this.cleanHeader(camelHeader);
+
+                    // Handle duplicate headers
+                    if (headerCount[camelHeader]) {
+                        headerCount[camelHeader] += 1;
+                        camelHeader = `${camelHeader}${headerCount[camelHeader]}`;
+                    } else {
+                        headerCount[camelHeader] = 1;
+                    }
+
+                    headers.push(camelHeader);
+                });
+
+                return headers;
+            }
+
+            // Helper method to convert a string to camelCase
+            toCamelCase(str) {
+                return str
+                    .replace(/[-_\s]+(.)?/g, (_, chr) => (chr ? chr.toUpperCase() : ''))
+                    .replace(/^(.)/, (match) => match.toLowerCase());
+            }
+
+            // Helper method to clean headers by removing invalid JSON key characters
+            cleanHeader(str) {
+                // JSON keys must be strings, and it's best to avoid spaces and special characters
+                // Replace spaces and special characters with empty string or appropriate substitutes
+                return str.replace(/[^a-zA-Z0-9]/g, '');
+            }
+
+            // Helper method to infer and convert data types
+            inferType(value) {
+                // Check for leading zeros (e.g., "03450")
+                if (/^0\d+/.test(value)) {
+                    return value; // Return as string to preserve leading zeros
+                }
+
+                // Attempt to convert to number
+                if (!isNaN(value)) {
+                    return Number(value);
+                }
+
+                // Attempt to convert to boolean
+                const lowerVal = value.toLowerCase();
+                if (lowerVal === 'true') return true;
+                if (lowerVal === 'false') return false;
+
+                // Return as string if no conversion is possible
+                return value;
+            }
+        }
+
+        // XML Formatter
+        class XmlFormatter extends Formatter {
+            constructor(options = {}) {
+                super();
+                this.options = options;
+                // Default options
+                this.options = Object.assign({
+                    modelTagName: null // User-specified model tag name
+                }, options);
+            }
+
+            format(data, headers = [], modelTagName = 'Item') {
+                let rootTag = modelTagName || 'Item';
+                let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<${rootTag}>\n`;
+
+                if (Array.isArray(data) && Array.isArray(data[0])) {
+                    // Assume table data
+                    const tableHeaders = headers.length > 0 ? headers : data[0];
+                    const sanitizedHeaders = this.processHeaders(tableHeaders);
+
+                    // Iterate over each row (skip header if present)
+                    const startIndex = this.options.assumeHeader ? 1 : 0;
+                    const rows = data.slice(startIndex);
+
+                    rows.forEach((row, rowIndex) => {
+                        xml += `  <Item index="${rowIndex}">\n`;
+                        row.forEach((cell, cellIndex) => {
+                            const tagName = sanitizedHeaders[cellIndex] || `field${cellIndex + 1}`;
+                            xml += `    <${tagName}>${this.escapeXml(cell)}</${tagName}>\n`;
+                        });
+                        xml += `  </Item>\n`;
+                    });
+                } else if (Array.isArray(data)) {
+                    // Assume list data
+                    data.forEach((item, index) => {
+                        xml += `  <Item index="${index}">\n`;
+                        xml += `    <Text>${this.escapeXml(item.text)}</Text>\n`;
+                        if (item.subItems && item.subItems.length > 0) {
+                            xml += `    <SubItems>\n`;
+                            item.subItems.forEach(subList => {
+                                xml += this.format(subList, [], 'SubList');
+                            });
+                            xml += `    </SubItems>\n`;
+                        }
+                        xml += `  </Item>\n`;
+                    });
+                }
+                xml += `</${rootTag}>`;
+                return xml;
+            }
+
+            // Helper method to escape XML special characters
+            escapeXml(str) {
+                return str.replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;')
+                          .replace(/"/g, '&quot;')
+                          .replace(/'/g, '&apos;');
+            }
+
+            // Processes headers to ensure valid XML tag names
+            processHeaders(headers) {
+                return headers.map(header => {
+                    // Remove invalid characters and ensure the tag starts with a letter or underscore
+                    let cleanHeader = header.replace(/[^a-zA-Z0-9]/g, '');
+                    if (!/^[a-zA-Z_]/.test(cleanHeader)) {
+                        cleanHeader = `field${cleanHeader}`;
+                    }
+                    return cleanHeader;
+                });
+            }
+        }
+
+        // --------------------------
+        // HTMLNode and TagProfile Classes
+        // --------------------------
+
+        class HTMLNode {
+            constructor(tagName = 'root', attributes = {}, parent = null, textContent = '') {
+                this.tagName = tagName;
+                this.attributes = attributes;
+                this.children = [];
+                this.parent = parent;
+                this.textContent = textContent;
+            }
+
+            addChild(child) {
+                this.children.push(child);
+            }
+        }
+
+        class TagProfile {
+            constructor() {
+                this.count = 0;
+                this.attributes = new Map();
+            }
+
+            increment(attrName = null) {
+                this.count += 1;
+                if (attrName) {
+                    if (this.attributes.has(attrName)) {
+                        this.attributes.set(attrName, this.attributes.get(attrName) + 1);
+                    } else {
+                        this.attributes.set(attrName, 1);
+                    }
+                }
+            }
+        }
+
+        class HTMLParser {
+            constructor() {
+                this.root = new HTMLNode();
+                this.tagMap = new Map();
+            }
+
+            parse(html) {
+                const tagRegex = /<\/?([a-zA-Z0-9]+)([^>]*)>|([^<]+)/g;
+                const stack = [this.root];
+                let match;
+
+                while ((match = tagRegex.exec(html))) {
+                    if (match[3]) {
+                        // Text node
+                        const text = match[3].trim();
+                        if (text) {
+                            const textNode = new HTMLNode('#text', {}, stack[stack.length - 1], text);
+                            stack[stack.length - 1].addChild(textNode);
+                        }
+                        continue;
+                    }
+
+                    const isClosing = match[0].startsWith('</');
+                    const tagName = match[1];
+                    const attrString = match[2].trim();
+
+                    if (isClosing) {
+                        if (stack.length > 1) { // Prevent popping the root
+                            stack.pop();
+                        }
+                    } else {
+                        const attributes = this.parseAttributes(attrString);
+                        const node = new HTMLNode(tagName, attributes, stack[stack.length - 1]);
+                        stack[stack.length - 1].addChild(node);
+                        this.updateTagMap(tagName, attributes);
+
+                        if (!this.isSelfClosing(tagName, attrString)) {
+                            stack.push(node);
+                        }
+                    }
+                }
+            }
+
+            parseAttributes(attrString) {
+                const attrs = {};
+                const attrRegex = /([a-zA-Z\-:]+)(?:="([^"]*)")?/g;
+                let match;
+                while ((match = attrRegex.exec(attrString))) {
+                    attrs[match[1]] = match[2] || null;
+                }
+                return attrs;
+            }
+
+            isSelfClosing(tagName, attrString) {
+                return /\/\s*$/.test(attrString) || ['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'].includes(tagName.toLowerCase());
+            }
+
+            updateTagMap(tagName, attributes) {
+                if (!this.tagMap.has(tagName)) {
+                    this.tagMap.set(tagName, new TagProfile());
+                }
+                const profile = this.tagMap.get(tagName);
+                profile.increment();
+                for (let attr in attributes) {
+                    profile.increment(attr);
+                }
+            }
+
+            getTagCount(tagName) {
+                return this.tagMap.has(tagName) ? this.tagMap.get(tagName).count : 0;
+            }
+
+            hasTag(tagName) {
+                return this.tagMap.has(tagName);
+            }
+
+            traverse(node = this.root, callback) {
+                callback(node);
+                node.children.forEach(child => this.traverse(child, callback));
+            }
+        }
+
+        // --------------------------
+        // UI Functions
+        // --------------------------
+
+        function switchTab(event) {
+            const selectedTab = event.target.getAttribute('data-tab');
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.toggle('active', tab.getAttribute('data-tab') === selectedTab);
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === selectedTab);
+            });
+        }
+
+        function createTreeElement(node) {
+            if (node.tagName === 'root') {
+                const fragment = document.createDocumentFragment();
+                node.children.forEach(child => {
+                    fragment.appendChild(createTreeElement(child));
+                });
+                return fragment;
+            }
+
+            const li = document.createElement('li');
+            li.dataset.tagName = node.tagName; // Store tag name
+
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'tag';
+            tagSpan.textContent = `<${node.tagName}>`;
+            tagSpan.style.cursor = 'pointer';
+            tagSpan.addEventListener('click', (event) => {
+                selectTag(node, event);
+            });
+            li.appendChild(tagSpan);
+
+            if (Object.keys(node.attributes).length > 0) {
+                const attrSpan = document.createElement('span');
+                attrSpan.className = 'attributes';
+                const attrs = Object.entries(node.attributes).map(([key, value]) => `${key}="${value}"`).join(' ');
+                attrSpan.textContent = ` ${attrs}`;
+                li.appendChild(attrSpan);
+            }
+
+            if (node.children.length > 0) {
+                const ul = document.createElement('ul');
+                node.children.forEach(child => {
+                    ul.appendChild(createTreeElement(child));
+                });
+                li.appendChild(ul);
+            }
+
+            return li;
+        }
+
+        function displayTagProfile(tagMap) {
+            const profileDiv = document.getElementById('tagProfile');
+            profileDiv.innerHTML = '';
+            const table = document.createElement('table');
+
+            const headerRow = document.createElement('tr');
+            ['Tag', 'Count', 'Attributes'].forEach(text => {
+                const th = document.createElement('th');
+                th.textContent = text;
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+
+            tagMap.forEach((profile, tag) => {
+                const row = document.createElement('tr');
+
+                const tagCell = document.createElement('td');
+                tagCell.textContent = tag;
+                row.appendChild(tagCell);
+
+                const countCell = document.createElement('td');
+                countCell.textContent = profile.count;
+                row.appendChild(countCell);
+
+                const attrCell = document.createElement('td');
+                const attrs = Array.from(profile.attributes.entries()).map(([attr, count]) => `${attr}: ${count}`).join(', ');
+                attrCell.textContent = attrs || 'None';
+                row.appendChild(attrCell);
+
+                table.appendChild(row);
+            });
+
+            profileDiv.appendChild(table);
+        }
+
+        function renderViewer(htmlContent) {
+            const viewerFrame = document.getElementById('viewerContent');
+            // Using srcdoc to safely render HTML
+            viewerFrame.srcdoc = htmlContent;
+        }
+
+        // Helper Function to Extract <body> Content
+        function extractBodyContent(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            if (doc.body) {
+                return doc.body.innerHTML;
+            } else {
+                return html; // Fallback to full HTML if <body> not found
+            }
+        }
+
+        // Variables to manage selection
+        let selectedTag = null;
+
+        function selectTag(node, event) {
+            selectedTag = node;
+            // Highlight selected tag in the hierarchy
+            document.querySelectorAll('.tag').forEach(tag => tag.classList.remove('selected'));
+            event.target.classList.add('selected');
+            // Update Extract Data tab content
+            updateExtractSection();
+            // Switch to Extract Data tab
+            switchToTab('extract');
+        }
+
+        function updateExtractSection() {
+            const extractSection = document.getElementById('extractSection');
+            if (!selectedTag) {
+                extractSection.innerHTML = '<p>No tag selected.</p>';
+                return;
+            }
+
+            extractSection.innerHTML = `
+                <h3>Selected Tag: &lt;${selectedTag.tagName}&gt;</h3>
+                <div class="formatter-options">
+                    <label for="formatType">Choose Output Format:</label>
+                    <select id="formatType">
+                        <option value="delimited">Delimited</option>
+                        <option value="hierarchical">Hierarchical List</option>
+                        <option value="fixed">Fixed-Length</option>
+                        <option value="json">JSON</option>
+                        <option value="xml">XML</option>
+                    </select>
+
+                    <div id="delimitedOptions" style="display: none;">
+                        <label for="delimiter">Delimiter:</label>
+                        <select id="delimiter">
+                            <option value=",">Comma (,)</option>
+                            <option value=";">Semicolon (;)</option>
+                            <option value="\t">Tab (&#09;)</option>
+                            <option value="|">Pipe (|)</option>
+                        </select>
+
+                        <label for="quoteChar">Quote Character:</label>
+                        <input type="text" id="quoteChar" value="&quot;" maxlength="1">
+
+                        <label for="lineEnding">Line Ending:</label>
+                        <select id="lineEnding">
+                            <option value="\r\n">Windows (CRLF)</option>
+                            <option value="\n">Unix/Linux/macOS (LF)</option>
+                            <option value="\r">Old Mac (CR)</option>
+                        </select>
+
+                        <label for="includeRowNumbers">
+                            <input type="checkbox" id="includeRowNumbers"> Include Row Numbers
+                        </label>
+
+                        <label for="columnsToInclude">Columns to Include (comma-separated indices, starting at 0):</label>
+                        <input type="text" id="columnsToInclude" placeholder="e.g., 0,2">
+
+                        <label for="customTransform">Custom Transformation Function (JavaScript):</label>
+                        <input type="text" id="customTransform" placeholder="e.g., (cell) => cell.toUpperCase()">
+                    </div>
+
+                    <div id="xmlOptions" style="display: none;">
+                        <label for="modelTagName">Model Tag Name:</label>
+                        <input type="text" id="modelTagName" placeholder="Enter model tag name (default: Item)">
+                    </div>
+                </div>
+                <button id="extractButton">Extract</button>
+                <div id="extractionResult"></div>
+            `;
+
+            const formatTypeSelect = document.getElementById('formatType');
+            formatTypeSelect.addEventListener('change', (event) => {
+                const format = event.target.value;
+                document.getElementById('delimitedOptions').style.display = format === 'delimited' ? 'block' : 'none';
+                document.getElementById('xmlOptions').style.display = format === 'xml' ? 'block' : 'none';
+            });
+
+            document.getElementById('extractButton').addEventListener('click', () => {
+                const format = document.getElementById('formatType').value;
+                extractData(selectedTag, format);
+            });
+        }
+
+        function switchToTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.toggle('active', tab.getAttribute('data-tab') === tabName);
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === tabName);
+            });
+        }
+
+        // --------------------------
+        // Data Extraction and Formatting Functions
+        // --------------------------
+
+        function extractData(node, format) {
+            let extractedData = [];
+            let formattedData = '';
+            let errors = [];
+            let headers = [];
+
+            try {
+                // Determine the extractor based on tag
+                if (node.tagName.toLowerCase() === 'table') {
+                    const extractor = new TableExtractor(node);
+                    extractedData = extractor.extract();
+
+                    // Assuming first row is header
+                    headers = extractedData[0];
+                } else if (node.tagName.toLowerCase() === 'ul' || node.tagName.toLowerCase() === 'ol') {
+                    const extractor = new ListExtractor(node);
+                    extractedData = extractor.extract();
+                } else {
+                    throw new Error('Data extraction for this tag is not supported.');
+                }
+
+                // Instantiate the appropriate formatter
+                let formatter;
+                switch(format) {
+                    case 'delimited':
+                        const delimiter = document.getElementById('delimiter').value;
+                        const quoteChar = document.getElementById('quoteChar').value || '"';
+                        const lineEnding = document.getElementById('lineEnding').value;
+                        const includeRowNumbers = document.getElementById('includeRowNumbers').checked;
+                        const columnsInput = document.getElementById('columnsToInclude').value.trim();
+                        const customTransformInput = document.getElementById('customTransform').value.trim();
+
+                        let columnsToInclude = null;
+                        if (columnsInput) {
+                            columnsToInclude = columnsInput.split(',').map(index => parseInt(index.trim())).filter(index => !isNaN(index));
+                        }
+
+                        let customTransform = null;
+                        if (customTransformInput) {
+                            try {
+                                customTransform = eval(customTransformInput);
+                                if (typeof customTransform !== 'function') {
+                                    throw new Error('Custom transform is not a function.');
+                                }
+                            } catch (e) {
+                                throw new Error('Invalid custom transformation function.');
+                            }
+                        }
+
+                        formatter = new DelimitedFormatter({
+                            delimiter: delimiter,
+                            quoteChar: quoteChar,
+                            assumeHeader: true,
+                            customHeaders: null,
+                            lineEnding: lineEnding,
+                            includeRowNumbers: includeRowNumbers,
+                            columnsToInclude: columnsToInclude,
+                            customTransform: customTransform
+                        });
+                        formattedData = formatter.format(extractedData);
+                        break;
+                    case 'fixed':
+                        formatter = new FixedLengthFormatter();
+                        formattedData = formatter.format(extractedData);
+                        break;
+                    case 'json':
+                        formatter = new JsonFormatter();
+                        formattedData = formatter.format(extractedData);
+                        break;
+                    case 'xml':
+                        const modelTagNameInput = document.getElementById('modelTagName').value.trim();
+                        const modelTagName = modelTagNameInput || 'Item';
+                        formatter = new XmlFormatter({
+                            modelTagName: modelTagName
+                        });
+                        formattedData = formatter.format(extractedData, headers, modelTagName);
+                        break;
+                    case 'hierarchical':
+                        if (node.tagName.toLowerCase() === 'ul' || node.tagName.toLowerCase() === 'ol') {
+                            // Hierarchical list is handled separately
+                            formattedData = formatHierarchicalList(extractedData);
+                        } else {
+                            throw new Error('Hierarchical List extraction is only supported for list tags.');
+                        }
+                        break;
+                    default:
+                        throw new Error('Unsupported format.');
+                }
+
+                // Display the formatted data
+                displayExtractionResult(formattedData, format);
+            } catch (error) {
+                errors.push(error.message);
+                displayExtractionResult('', format, errors);
+            }
+        }
+
+        // Function to format hierarchical list data
+        function formatHierarchicalList(listData, depth = 0) {
+            let result = '';
+            const indent = '  '.repeat(depth);
+            listData.forEach(item => {
+                result += `${indent}- ${item.text}\n`;
+                if (item.subItems && item.subItems.length > 0) {
+                    item.subItems.forEach(subList => {
+                        result += formatHierarchicalList(subList, depth + 1);
+                    });
+                }
+            });
+            return result;
+        }
+
+        // Function to display the extraction result with Copy and Download buttons
+        function displayExtractionResult(data, format, errors = []) {
+            const resultDiv = document.getElementById('extractionResult');
+            resultDiv.innerHTML = '';
+
+            if (errors.length > 0) {
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'error';
+                errorMsg.textContent = errors.join('\n');
+                resultDiv.appendChild(errorMsg);
+                return;
+            }
+
+            if (data) {
+                resultDiv.innerHTML = `
+                    <textarea id="extractedData" style="width: 100%; height: 200px;">${data}</textarea>
+                    <div class="action-buttons">
+                        <button id="copyButton">Copy</button>
+                        <button id="downloadButton">Download</button>
+                    </div>
+                `;
+
+                // Copy Button
+                document.getElementById('copyButton').addEventListener('click', () => {
+                    const extractedData = document.getElementById('extractedData');
+                    extractedData.select();
+                    document.execCommand('copy');
+                    alert('Data copied to clipboard!');
+                });
+
+                // Download Button
+                document.getElementById('downloadButton').addEventListener('click', () => {
+                    let filename = 'data.txt';
+                    let mimeType = 'text/plain';
+                    if (format === 'delimited') {
+                        filename = 'data.csv';
+                        mimeType = 'text/csv';
+                    } else if (format === 'json') {
+                        filename = 'data.json';
+                        mimeType = 'application/json';
+                    } else if (format === 'xml') {
+                        filename = 'data.xml';
+                        mimeType = 'application/xml';
+                    } else if (format === 'fixed') {
+                        filename = 'data.txt';
+                        mimeType = 'text/plain';
+                    } else if (format === 'hierarchical') {
+                        filename = 'data.txt';
+                        mimeType = 'text/plain';
+                    }
+                    downloadData(data, filename, mimeType);
+                });
+            } else {
+                resultDiv.innerHTML = '<p>No data to display.</p>';
+            }
+        }
+
+        // Function to download data as a file
+        function downloadData(data, filename, type) {
+            const blob = new Blob([data], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a); // Required for Firefox
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // --------------------------
+        // Event Listeners
+        // --------------------------
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', switchTab);
+        });
+
+        document.getElementById('parseButton').addEventListener('click', async () => {
+            const htmlInput = document.getElementById('htmlInput').value.trim();
+            const urlInput = document.getElementById('urlInput').value.trim();
+            const loader = document.getElementById('loader');
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.textContent = '';
+            loader.style.display = 'block';
+
+            let htmlContent = '';
+            let viewerContent = '';
+
+            try {
+                if (urlInput) {
+                    // Fetch HTML from URL
+                    const response = await fetch(urlInput);
+                    if (!response.ok) {
+                        throw new Error(`Error fetching URL: ${response.status} ${response.statusText}`);
+                    }
+                    htmlContent = await response.text();
+
+                    // Extract <body> content for viewer
+                    viewerContent = extractBodyContent(htmlContent);
+                } else if (htmlInput) {
+                    // Use pasted HTML
+                    htmlContent = htmlInput;
+                    viewerContent = htmlContent; // Render as is
+                } else {
+                    throw new Error('Please provide HTML input or a URL.');
+                }
+
+                const parser = new HTMLParser();
+                parser.parse(htmlContent);
+
+                // Display Tag Profiling
+                const profileTab = document.querySelector('.tab[data-tab="profile"]');
+                profileTab.textContent = 'Tag Profiling';
+                displayTagProfile(parser.tagMap);
+
+                // Display Tag Hierarchy
+                const tagTree = document.getElementById('tagTree');
+                tagTree.innerHTML = '';
+                const treeElements = createTreeElement(parser.root);
+                tagTree.appendChild(treeElements);
+
+                // Render Viewer
+                renderViewer(viewerContent);
+
+            } catch (error) {
+                errorMsg.textContent = error.message;
+                // Clear previous results
+                document.getElementById('tagProfile').innerHTML = 'No data available. Please parse HTML first.';
+                document.getElementById('tagTree').innerHTML = 'No data available. Please parse HTML first.';
+                renderViewer(''); // Clear viewer
+            } finally {
+                loader.style.display = 'none';
+            }
+        });
+
+        // Initial parse on page load
+        window.onload = () => {
+            document.getElementById('parseButton').click();
+        };
+    </script>
+</body>
+</html>
