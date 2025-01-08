@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TaskMaster</title>
+  <style>
+    /* ----- BASIC STYLES ----- */
+    * {
+      box-sizing: border-box;
+      font-family: sans-serif;
+    }
+
+    body {
+      margin: 0; 
+      padding: 0; 
+      height: 100vh; 
+      display: flex; 
+      flex-direction: column;
+    }
+
+    #app {
+      flex: 1; 
+      display: flex; 
+      overflow: hidden;
+    }
+
+    /* ----- SIDEBAR ----- */
+    #sidebar {
+      width: 300px;
+      background-color: #f7f7f7;
+      border-right: 1px solid #ccc;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #sidebarHeader {
+      padding: 0.5rem; 
+      background: #ececec; 
+      border-bottom: 1px solid #ccc;
+    }
+
+    #workspaceSelector {
+      margin-bottom: 0.5rem;
+      width: 100%;
+    }
+
+    #searchBox {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+
+    .filterRow {
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    #sidebarCommands {
+      display: flex; 
+      gap: 0.5rem; 
+      margin-bottom: 0.5rem;
+    }
+
+    #sidebarContent {
+      flex: 1; 
+      overflow-y: auto; 
+      padding: 0.5rem;
+    }
+
+    .taskItem {
+      padding: 0.25rem 0.5rem;
+      margin: 0.25rem 0;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .taskItem:hover {
+      background-color: #ddd;
+    }
+    .taskItem.selected {
+      background-color: #ccc;
+    }
+
+    /* ----- MAIN PANEL ----- */
+    #mainPanel {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+
+    .sectionHeader {
+      font-weight: bold; 
+      margin-top: 1rem; 
+      margin-bottom: 0.5rem;
+    }
+
+    .inlineField {
+      display: flex; 
+      gap: 0.5rem; 
+      margin-bottom: 0.5rem; 
+      align-items: center;
+    }
+
+    .inlineField label {
+      width: 100px; 
+      font-weight: bold;
+    }
+
+    .inlineField input[type="text"],
+    .inlineField input[type="number"],
+    .inlineField select,
+    .inlineField textarea {
+      flex: 1;
+      padding: 0.25rem;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    /* Notes list */
+    .notesList {
+      margin-top: 0.5rem; 
+      border: 1px solid #ccc; 
+      padding: 0.5rem; 
+      min-height: 50px;
+    }
+
+    .noteItem {
+      border-bottom: 1px solid #ccc; 
+      padding: 0.5rem 0;
+    }
+
+    .noteItem:last-child {
+      border-bottom: none;
+    }
+
+    .noteControls {
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+
+    /* Basic button styling */
+    button {
+      cursor: pointer;
+      padding: 0.3rem 0.6rem;
+      border: 1px solid #999;
+      background-color: #eee;
+      border-radius: 3px;
+    }
+
+    button:hover {
+      background-color: #ddd;
+    }
+
+    button:disabled {
+      opacity: 0.5; 
+      cursor: not-allowed;
+    }
+
+    /* Quick layout tweak for filters bar if you want them inline */
+    #filterBar {
+      margin-bottom: 0.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- ===== SIDEBAR ===== -->
+    <div id="sidebar">
+      <div id="sidebarHeader">
+        <select id="workspaceSelector"></select>
+        <input type="text" id="searchBox" placeholder="Search tasks..." />
+        
+        <div id="sidebarCommands">
+          <button id="btnAddTask">Add</button>
+          <button id="btnDeleteTask">Delete</button>
+          <button id="btnExport">Export</button>
+          <button id="btnImport">Import</button>
+        </div>
+
+        <!-- Filter mode: list vs. tree, plus toggling filters -->
+        <div class="filterRow">
+          <label for="viewMode">View:</label>
+          <select id="viewMode">
+            <option value="list">List</option>
+            <option value="tree">Tree</option>
+          </select>
+        </div>
+
+        <button id="toggleFiltersBtn">Filters</button>
+        <div id="filterBar" class="hidden">
+          <label for="filterTags">Tags:</label>
+          <input type="text" id="filterTags" placeholder="tag1 tag2 ..." />
+
+          <label for="filterStatus">Status:</label>
+          <input type="text" id="filterStatus" placeholder="status1 status2 ..." />
+
+          <label for="filterPriority">Priority:</label>
+          <input type="number" id="filterPriority" placeholder="e.g. 1" />
+
+          <label for="filterUrgency">Urgency (min):</label>
+          <input type="number" id="filterUrgency" placeholder="e.g. 3" />
+
+          <label for="filterImportance">Importance (min):</label>
+          <input type="number" id="filterImportance" placeholder="e.g. 4" />
+        </div>
+      </div>
+      <div id="sidebarContent">
+        <!-- Dynamic list or tree of tasks will appear here -->
+      </div>
+    </div>
+
+    <!-- ===== MAIN PANEL ===== -->
+    <div id="mainPanel">
+      <h2>Task Details</h2>
+
+      <div class="inlineField">
+        <label>ID:</label>
+        <span id="taskIdLabel">—</span>
+      </div>
+
+      <div class="inlineField">
+        <label for="titleInput">Title:</label>
+        <input type="text" id="titleInput" />
+      </div>
+
+      <div class="inlineField">
+        <label for="descriptionInput">Description:</label>
+        <textarea id="descriptionInput" rows="3"></textarea>
+      </div>
+
+      <div class="inlineField">
+        <label for="tagsInput">Tags:</label>
+        <input type="text" id="tagsInput" placeholder="kebab-case tags" />
+      </div>
+
+      <div class="inlineField">
+        <label for="statusCurrent">Current Status:</label>
+        <span id="statusCurrent">—</span>
+      </div>
+
+      <div class="inlineField">
+        <label for="statusNext">Next Status:</label>
+        <select id="statusNext"></select>
+      </div>
+
+      <!-- Priority / Urgency / Importance (sliders or numeric) -->
+      <div class="inlineField">
+        <label for="priorityInput">Priority:</label>
+        <input type="range" min="-1" max="10" id="priorityInput" />
+        <span id="priorityVal"></span>
+      </div>
+
+      <div class="inlineField">
+        <label for="urgencyInput">Urgency:</label>
+        <input type="range" min="1" max="10" id="urgencyInput" />
+        <span id="urgencyVal"></span>
+      </div>
+
+      <div class="inlineField">
+        <label for="importanceInput">Importance:</label>
+        <input type="range" min="1" max="10" id="importanceInput" />
+        <span id="importanceVal"></span>
+      </div>
+
+      <div class="inlineField">
+        <label for="dueDateInput">Due Date:</label>
+        <input type="datetime-local" id="dueDateInput" />
+      </div>
+
+      <div class="sectionHeader">Notes</div>
+      <div class="notesList" id="notesList"></div>
+      <button id="btnAddNote">Add Note</button>
+    </div>
+  </div>
+
+  <!-- ===== FILE INPUT FOR IMPORTING JSON ===== -->
+  <input type="file" id="fileImport" accept=".json" style="display:none" />
+
+  <script>
+  /*******************************************************
+   *  Simple TaskMaster SPA with IndexedDB
+   *  - Multiple Workspaces
+   *  - Real-time updates
+   *  - Tree view vs. list view
+   *  - Filters
+   *******************************************************/
+
+  // ===============================
+  // Utility: Generate a short ID from a full UUID
+  // ===============================
+  function generateShortId() {
+    // You can generate a full UUID and slice it, or just do random hex
+    return 'xxxxxxxx'.replace(/[x]/g, function() {
+      return (Math.random() * 16 | 0).toString(16);
+    }).slice(0,6).toUpperCase();
+  }
+
+  // ===============================
+  // IndexedDB Setup
+  // ===============================
+  let db = null;
+  const DB_NAME = 'TaskMasterDB';
+  const DB_VERSION = 1;
+  const STORE_WORKSPACES = 'taskMasters';
+
+  function openDatabase() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded = (e) => {
+        db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_WORKSPACES)) {
+          // Each record in taskMasters store is a "workspace"
+          const store = db.createObjectStore(STORE_WORKSPACES, { keyPath: 'id' });
+          // Key path is "id", e.g. "AB12"
+        }
+      };
+      request.onsuccess = (e) => {
+        db = e.target.result;
+        resolve(db);
+      };
+      request.onerror = (e) => {
+        reject(e);
+      };
+    });
+  }
+
+  function getAllWorkspaces() {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_WORKSPACES, 'readonly');
+      const store = tx.objectStore(STORE_WORKSPACES);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = (e) => reject(e);
+    });
+  }
+
+  function addOrUpdateWorkspace(workspace) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_WORKSPACES, 'readwrite');
+      const store = tx.objectStore(STORE_WORKSPACES);
+      const req = store.put(workspace);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = (e) => reject(e);
+    });
+  }
+
+  function getWorkspaceById(id) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_WORKSPACES, 'readonly');
+      const store = tx.objectStore(STORE_WORKSPACES);
+      const req = store.get(id);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = (e) => reject(e);
+    });
+  }
+
+  // ===============================
+  // DEFAULT WORKSPACE TEMPLATE (in code)
+  //  - This is inserted if no workspace is found
+  //  - Modify as you wish before first run
+  // ===============================
+  const workspaceTemplate = {
+    id: generateShortId(),
+    name: "DefaultWorkspace",
+    config: {
+      // Example basic state machine
+      beginState: "created-at",
+      endStates: ["completed","abandoned"],
+      states: {
+        "created-at":   ["in-progress","back-burner","on-hold"],
+        "in-progress":  ["back-burner","on-hold","completed","abandoned"],
+        "back-burner":  ["in-progress","abandoned"],
+        "on-hold":      ["in-progress","abandoned"],
+        "completed":    [],
+        "abandoned":    []
+      }
+    },
+    defaults: {
+      priority: -1,
+      urgency: 3,
+      importance: 3
+    },
+    tasks: [],
+    relationships: []
+  };
+
+  let currentWorkspace = null; // the workspace object we’re working with
+  let selectedTaskId = null;   // track currently selected task in UI
+
+  // ===============================
+  // On Startup
+  // ===============================
+  document.addEventListener('DOMContentLoaded', async () => {
+    await openDatabase();
+    const all = await getAllWorkspaces();
+    if (all.length === 0) {
+      // Insert the default workspace template
+      await addOrUpdateWorkspace(workspaceTemplate);
+      currentWorkspace = workspaceTemplate;
+    } else {
+      // If more than one workspace, we’ll let user choose
+      // (For now, pick the first by default, or show a dropdown of them.)
+      currentWorkspace = all[0];
+    }
+    // Fill workspace dropdown
+    populateWorkspaceSelector(all);
+
+    // If there’s more than one, let user pick in the dropdown
+    // If user changes the dropdown, we load the selected workspace
+    const wsSelector = document.getElementById('workspaceSelector');
+    wsSelector.addEventListener('change', async () => {
+      const wsId = wsSelector.value;
+      if (!wsId) return;
+      const chosenWS = await getWorkspaceById(wsId);
+      if (chosenWS) {
+        currentWorkspace = chosenWS;
+        refreshUI();
+      }
+    });
+
+    refreshUI();
+    setupEventHandlers();
+  });
+
+  // Populate workspace selection dropdown
+  function populateWorkspaceSelector(workspaces) {
+    const wsSelector = document.getElementById('workspaceSelector');
+    wsSelector.innerHTML = '';
+    workspaces.forEach(ws => {
+      const opt = document.createElement('option');
+      opt.value = ws.id;
+      opt.textContent = `${ws.name} (${ws.id})`;
+      wsSelector.appendChild(opt);
+    });
+    // If no selection, auto-select the first
+    if (wsSelector.options.length > 0) {
+      wsSelector.selectedIndex = 0;
+    }
+  }
+
+  // ===============================
+  // UI Event Handlers
+  // ===============================
+  function setupEventHandlers() {
+    document.getElementById('btnAddTask').addEventListener('click', addTask);
+    document.getElementById('btnDeleteTask').addEventListener('click', deleteSelectedTask);
+    document.getElementById('searchBox').addEventListener('input', () => refreshTaskList());
+    document.getElementById('btnExport').addEventListener('click', exportWorkspace);
+    document.getElementById('btnImport').addEventListener('click', () => {
+      document.getElementById('fileImport').click();
+    });
+    document.getElementById('fileImport').addEventListener('change', handleImportFile);
+
+    // Toggle filters
+    document.getElementById('toggleFiltersBtn').addEventListener('click', () => {
+      const fb = document.getElementById('filterBar');
+      fb.classList.toggle('hidden');
+    });
+
+    // Any filter changes should refresh the list
+    ['filterTags','filterStatus','filterPriority','filterUrgency','filterImportance','viewMode']
+      .forEach(id => document.getElementById(id).addEventListener('input', () => refreshTaskList()));
+
+    // Fields in main panel => real-time updates
+    document.getElementById('titleInput').addEventListener('input', onTaskFieldChange);
+    document.getElementById('descriptionInput').addEventListener('input', onTaskFieldChange);
+    document.getElementById('tagsInput').addEventListener('input', onTaskFieldChange);
+    document.getElementById('statusNext').addEventListener('change', onStatusTransition);
+
+    document.getElementById('priorityInput').addEventListener('input', onTaskFieldChange);
+    document.getElementById('urgencyInput').addEventListener('input', onTaskFieldChange);
+    document.getElementById('importanceInput').addEventListener('input', onTaskFieldChange);
+    document.getElementById('dueDateInput').addEventListener('change', onTaskFieldChange);
+
+    // Add note
+    document.getElementById('btnAddNote').addEventListener('click', addNoteToCurrentTask);
+  }
+
+  // ===============================
+  // Core: Refresh Entire UI
+  // ===============================
+  function refreshUI() {
+    if (!currentWorkspace) return;
+    refreshTaskList();
+    populateTaskDetails(null); // clear details initially
+  }
+
+  // ===============================
+  // Task List Rendering
+  // ===============================
+  function refreshTaskList() {
+    const container = document.getElementById('sidebarContent');
+    container.innerHTML = '';
+    if (!currentWorkspace) return;
+
+    // 1) Gather all tasks
+    const { tasks } = currentWorkspace;
+
+    // 2) Filter tasks
+    const filteredTasks = applyFilters(tasks);
+
+    // 3) Determine view mode (list vs. tree)
+    const mode = document.getElementById('viewMode').value;
+    if (mode === 'list') {
+      // Simply list tasks
+      filteredTasks.forEach(t => {
+        container.appendChild(renderTaskItem(t));
+      });
+    } else {
+      // Build tree from relationships
+      const tree = buildTaskTree(filteredTasks, currentWorkspace.relationships);
+      tree.forEach(rootNode => {
+        renderTreeNode(rootNode, container, 0);
+      });
+    }
+  }
+
+  function renderTaskItem(task) {
+    const div = document.createElement('div');
+    div.className = 'taskItem';
+    if (task.id === selectedTaskId) {
+      div.classList.add('selected');
+    }
+    div.textContent = `${task.title} (${getCurrentStatus(task)})`;
+    div.addEventListener('click', () => {
+      selectedTaskId = task.id;
+      populateTaskDetails(task.id);
+      refreshTaskList(); // re-highlight selection
+    });
+    return div;
+  }
+
+  function buildTaskTree(tasks, relationships) {
+    // We’ll define parent-child if relationships[].type == '' => child-of
+    // Make a map of children for each task
+    const childMap = {};
+    tasks.forEach(t => {
+      childMap[t.id] = [];
+    });
+
+    relationships.forEach(rel => {
+      // If we have empty type => child-of
+      if (rel.type === '') {
+        if (childMap[rel.idY] && tasks.find(t => t.id === rel.idX)) {
+          childMap[rel.idY].push(rel.idX);
+        }
+      }
+    });
+
+    // Find tasks that are not children of anyone
+    const allChildren = new Set(relationships.filter(r => r.type === '').map(r => r.idX));
+    const rootTasks = tasks.filter(t => !allChildren.has(t.id));
+
+    // Build a nested data structure
+    function buildNode(task) {
+      return {
+        task: task,
+        children: childMap[task.id].map(childId => {
+          const childTask = tasks.find(t => t.id === childId);
+          return buildNode(childTask);
+        })
+      };
+    }
+
+    return rootTasks.map(buildNode);
+  }
+
+  function renderTreeNode(node, container, level) {
+    // node = { task, children[] }
+    const indent = 20 * level;
+    const div = renderTaskItem(node.task);
+    div.style.marginLeft = indent + 'px';
+    container.appendChild(div);
+    node.children.forEach(childNode => {
+      renderTreeNode(childNode, container, level + 1);
+    });
+  }
+
+  // ===============================
+  // Filtering Logic
+  // ===============================
+  function applyFilters(tasks) {
+    const searchText = document.getElementById('searchBox').value.trim().toLowerCase();
+    const filterTags = document.getElementById('filterTags').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const filterStatus = document.getElementById('filterStatus').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const filterPriority = parseInt(document.getElementById('filterPriority').value, 10);
+    const filterUrgency = parseInt(document.getElementById('filterUrgency').value, 10);
+    const filterImportance = parseInt(document.getElementById('filterImportance').value, 10);
+
+    return tasks.filter(t => {
+      // Search title match
+      if (searchText && !t.title.toLowerCase().includes(searchText)) {
+        return false;
+      }
+
+      // Tag filter = OR logic
+      if (filterTags.length > 0) {
+        // We want to see if any of the filterTags is in t.tags
+        const lowerTags = t.tags.map(tag => tag.toLowerCase());
+        const hasOne = filterTags.some(ft => lowerTags.includes(ft));
+        if (!hasOne) return false;
+      }
+
+      // Status filter = OR logic
+      if (filterStatus.length > 0) {
+        const currStatus = getCurrentStatus(t).toLowerCase();
+        const hasOneStatus = filterStatus.some(fs => fs === currStatus);
+        if (!hasOneStatus) return false;
+      }
+
+      // Priority filter (if user typed something)
+      if (!isNaN(filterPriority)) {
+        if (t.priority !== filterPriority) {
+          return false;
+        }
+      }
+
+      // Urgency filter (min)
+      if (!isNaN(filterUrgency)) {
+        if (t.urgency < filterUrgency) {
+          return false;
+        }
+      }
+
+      // Importance filter (min)
+      if (!isNaN(filterImportance)) {
+        if (t.importance < filterImportance) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  // ===============================
+  // Populate Task Details in Main Panel
+  // ===============================
+  function populateTaskDetails(taskId) {
+    if (!currentWorkspace) return;
+
+    const task = currentWorkspace.tasks.find(t => t.id === taskId);
+    selectedTaskId = task ? task.id : null;
+
+    document.getElementById('taskIdLabel').textContent = task ? task.id : '—';
+    document.getElementById('titleInput').value = task ? task.title : '';
+    document.getElementById('descriptionInput').value = task ? task.description : '';
+    document.getElementById('tagsInput').value = task ? task.tags.join(' ') : '';
+
+    // Status
+    document.getElementById('statusCurrent').textContent = task ? getCurrentStatus(task) : '—';
+    // Populate next status dropdown
+    const selectNext = document.getElementById('statusNext');
+    selectNext.innerHTML = '';
+    if (task) {
+      const currStatus = getCurrentStatus(task);
+      const possibleNext = currentWorkspace.config.states[currStatus] || [];
+      possibleNext.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        selectNext.appendChild(opt);
+      });
+    }
+
+    // Priority / Urgency / Importance
+    document.getElementById('priorityInput').value = task ? task.priority : currentWorkspace.defaults.priority;
+    document.getElementById('urgencyInput').value = task ? task.urgency : currentWorkspace.defaults.urgency;
+    document.getElementById('importanceInput').value = task ? task.importance : currentWorkspace.defaults.importance;
+
+    document.getElementById('priorityVal').textContent = document.getElementById('priorityInput').value;
+    document.getElementById('urgencyVal').textContent = document.getElementById('urgencyInput').value;
+    document.getElementById('importanceVal').textContent = document.getElementById('importanceInput').value;
+
+    // DueDate
+    if (task && task.dueDate) {
+      // Format to yyyy-MM-ddTHH:mm
+      const dt = new Date(task.dueDate);
+      document.getElementById('dueDateInput').value = dt.toISOString().slice(0,16);
+    } else {
+      document.getElementById('dueDateInput').value = '';
+    }
+
+    // Notes
+    const notesDiv = document.getElementById('notesList');
+    notesDiv.innerHTML = '';
+    if (task && Array.isArray(task.notes)) {
+      task.notes.forEach((note, idx) => {
+        const noteDiv = document.createElement('div');
+        noteDiv.className = 'noteItem';
+
+        const noteText = document.createElement('div');
+        noteText.textContent = note.text;
+        noteDiv.appendChild(noteText);
+
+        const noteDate = document.createElement('div');
+        noteDate.style.fontSize = '0.8em';
+        noteDate.style.color = '#555';
+        noteDate.textContent = `Created at: ${new Date(note.createdAt).toLocaleString()}`;
+        noteDiv.appendChild(noteDate);
+
+        const controlsDiv = document.createElement('div');
+        controlsDiv.className = 'noteControls';
+
+        const btnEdit = document.createElement('button');
+        btnEdit.textContent = 'Edit';
+        btnEdit.onclick = () => {
+          const newText = prompt('Edit note text:', note.text);
+          if (newText !== null) {
+            note.text = newText;
+            saveWorkspace();
+            populateTaskDetails(task.id);
+          }
+        };
+        controlsDiv.appendChild(btnEdit);
+
+        const btnDelete = document.createElement('button');
+        btnDelete.textContent = 'Delete';
+        btnDelete.onclick = () => {
+          task.notes.splice(idx, 1);
+          saveWorkspace();
+          populateTaskDetails(task.id);
+        };
+        controlsDiv.appendChild(btnDelete);
+
+        noteDiv.appendChild(controlsDiv);
+
+        notesDiv.appendChild(noteDiv);
+      });
+    }
+  }
+
+  function getCurrentStatus(task) {
+    if (!task.statuses || task.statuses.length === 0) return '—';
+    // Last status in the array
+    const last = task.statuses[task.statuses.length - 1];
+    return last.status;
+  }
+
+  // ===============================
+  // Event Handlers for Main Panel Fields
+  //  -> Real-time update in tasks
+  // ===============================
+  function onTaskFieldChange() {
+    if (!selectedTaskId || !currentWorkspace) return;
+    const task = currentWorkspace.tasks.find(t => t.id === selectedTaskId);
+    if (!task) return;
+
+    task.title = document.getElementById('titleInput').value.trim();
+    task.description = document.getElementById('descriptionInput').value;
+    task.tags = document.getElementById('tagsInput').value.trim().split(/\s+/).filter(Boolean);
+
+    task.priority = parseInt(document.getElementById('priorityInput').value,10);
+    task.urgency = parseInt(document.getElementById('urgencyInput').value,10);
+    task.importance = parseInt(document.getElementById('importanceInput').value,10);
+
+    // Range display
+    document.getElementById('priorityVal').textContent = task.priority;
+    document.getElementById('urgencyVal').textContent = task.urgency;
+    document.getElementById('importanceVal').textContent = task.importance;
+
+    // Due date
+    const dueVal = document.getElementById('dueDateInput').value;
+    task.dueDate = dueVal ? new Date(dueVal).toISOString() : null;
+
+    saveWorkspace();
+  }
+
+  async function onStatusTransition() {
+    if (!selectedTaskId || !currentWorkspace) return;
+    const task = currentWorkspace.tasks.find(t => t.id === selectedTaskId);
+    if (!task) return;
+
+    const nextVal = document.getElementById('statusNext').value;
+    if (!nextVal) return;
+
+    task.statuses.push({
+      status: nextVal,
+      dateTime: new Date().toISOString()
+    });
+
+    saveWorkspace();
+    populateTaskDetails(task.id);
+    refreshTaskList();
+  }
+
+  // ===============================
+  // Add / Delete Tasks
+  // ===============================
+  async function addTask() {
+    if (!currentWorkspace) return;
+    const shortId = generateShortId();
+    const initStatus = currentWorkspace.config.beginState || 'created-at';
+
+    const newTask = {
+      id: shortId,
+      title: "New Task",
+      description: "",
+      tags: [],
+      statuses: [
+        { status: initStatus, dateTime: new Date().toISOString() }
+      ],
+      priority: currentWorkspace.defaults.priority,
+      urgency: currentWorkspace.defaults.urgency,
+      importance: currentWorkspace.defaults.importance,
+      dueDate: null,
+      notes: []
+    };
+
+    currentWorkspace.tasks.push(newTask);
+    selectedTaskId = newTask.id;
+    await saveWorkspace();
+    refreshUI();
+    populateTaskDetails(newTask.id);
+  }
+
+  async function deleteSelectedTask() {
+    if (!selectedTaskId || !currentWorkspace) return;
+    const idx = currentWorkspace.tasks.findIndex(t => t.id === selectedTaskId);
+    if (idx >= 0) {
+      // Confirm
+      if (!confirm("Are you sure you want to delete this task?")) return;
+      currentWorkspace.tasks.splice(idx, 1);
+      // Also remove relationships referencing this task
+      currentWorkspace.relationships = currentWorkspace.relationships.filter(rel => {
+        return rel.idX !== selectedTaskId && rel.idY !== selectedTaskId;
+      });
+      selectedTaskId = null;
+      await saveWorkspace();
+      refreshUI();
+    }
+  }
+
+  // ===============================
+  // Notes
+  // ===============================
+  function addNoteToCurrentTask() {
+    if (!selectedTaskId || !currentWorkspace) return;
+    const task = currentWorkspace.tasks.find(t => t.id === selectedTaskId);
+    if (!task) return;
+
+    const noteText = prompt("Enter note text:");
+    if (noteText !== null) {
+      task.notes.push({
+        text: noteText,
+        createdAt: new Date().toISOString()
+      });
+      saveWorkspace();
+      populateTaskDetails(task.id);
+    }
+  }
+
+  // ===============================
+  // Save (real-time) to IndexedDB
+  // ===============================
+  async function saveWorkspace() {
+    if (!currentWorkspace) return;
+    await addOrUpdateWorkspace(currentWorkspace);
+  }
+
+  // ===============================
+  // Import / Export
+  // ===============================
+  function exportWorkspace() {
+    if (!currentWorkspace) return;
+    // We’ll just export the currently loaded workspace
+    const dataStr = JSON.stringify(currentWorkspace, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `taskmaster_${currentWorkspace.name}_${currentWorkspace.id}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleImportFile(evt) {
+    const file = evt.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        // We interpret this entire JSON as a new workspace
+        // or an update if the IDs match one that already exists
+        if (!importedData.id) {
+          importedData.id = generateShortId();
+        }
+        // Insert or update
+        await addOrUpdateWorkspace(importedData);
+        alert(`Imported workspace: ${importedData.name} (${importedData.id})`);
+
+        // Reload the workspace list in the selector
+        const all = await getAllWorkspaces();
+        populateWorkspaceSelector(all);
+
+      } catch (ex) {
+        console.error(ex);
+        alert("Failed to import JSON.");
+      }
+    };
+    reader.readAsText(file);
+    evt.target.value = null; // reset
+  }
+  </script>
+</body>
+</html>
