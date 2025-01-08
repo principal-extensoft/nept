@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TaskMaster</title>
+  <!-- Link CSS -->
+  <link rel="stylesheet" href="css/task-master.0.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- ===== SIDEBAR ===== -->
+    <div id="sidebar">
+      <div id="sidebarHeader">
+        <div id="workspaceControls">
+          <select id="workspaceSelector"></select>
+          <button id="btnAddWorkspace">+</button>
+        </div>
+        <input type="text" id="searchBox" placeholder="Search tasks..." />
+        
+        <div id="sidebarCommands">
+          <button id="btnAddTask">Add</button>
+          <button id="btnDeleteTask">Delete</button>
+          <button id="btnExport">Export</button>
+          <button id="btnImport">Import</button>
+        </div>
+
+        <div class="filterRow">
+          <label for="viewMode">View:</label>
+          <select id="viewMode">
+            <option value="list">List</option>
+            <option value="tree">Tree</option>
+          </select>
+          <button id="toggleFiltersBtn">Filters</button>
+        </div>
+
+        <div id="filterBar" class="hidden">
+          <div class="filterRow">
+            <label for="filterTags">Tags:</label>
+            <input type="text" id="filterTags" placeholder="tag1 tag2..." />
+          </div>
+
+          <div class="filterRow">
+            <label for="filterStatus">Status:</label>
+            <input type="text" id="filterStatus" placeholder="status1 status2..." />
+          </div>
+
+          <div class="filterRow">
+            <label for="filterPriority">Priority:</label>
+            <input type="range" min="-1" max="10" value="-1" id="filterPriority" class="filterSlider" />
+            <span id="filterPriorityVal" class="rangeValue">-1</span>
+          </div>
+
+          <div class="filterRow">
+            <label for="filterUrgency">Urgency:</label>
+            <input type="range" min="0" max="10" value="0" id="filterUrgency" class="filterSlider" />
+            <span id="filterUrgencyVal" class="rangeValue">0</span>
+          </div>
+
+          <div class="filterRow">
+            <label for="filterImportance">Importance:</label>
+            <input type="range" min="0" max="10" value="0" id="filterImportance" class="filterSlider" />
+            <span id="filterImportanceVal" class="rangeValue">0</span>
+          </div>
+          <button id="btnClearFilters">Clear Filters</button>
+        </div>
+      </div>
+
+      <div id="sidebarContent"></div>
+    </div>
+
+    <!-- ===== MAIN PANEL ===== -->
+    <div id="mainPanel">
+      <h2>Task Details</h2>
+      <div class="inlineField">
+        <label>ID:</label>
+        <span id="taskIdLabel">—</span>
+      </div>
+
+      <div class="inlineField">
+        <label for="titleInput">Title:</label>
+        <input type="text" id="titleInput" />
+      </div>
+
+      <div class="inlineField">
+        <label for="descriptionInput">Description:</label>
+        <textarea id="descriptionInput" rows="3"></textarea>
+      </div>
+
+      <div class="inlineField">
+        <label for="tagsInput">Tags:</label>
+        <input type="text" id="tagsInput" placeholder="kebab-case tags" />
+      </div>
+
+      <div class="inlineField">
+        <label>Current Status:</label>
+        <span id="statusCurrent">—</span>
+      </div>
+
+      <div class="inlineField">
+        <label for="statusNext">Next Status:</label>
+        <select id="statusNext"></select>
+      </div>
+
+      <div class="inlineField">
+        <label for="priorityInput">Priority:</label>
+        <input type="range" min="-1" max="10" id="priorityInput" />
+        <span id="priorityVal" class="rangeValue"></span>
+      </div>
+
+      <div class="inlineField">
+        <label for="urgencyInput">Urgency:</label>
+        <input type="range" min="1" max="10" id="urgencyInput" />
+        <span id="urgencyVal" class="rangeValue"></span>
+      </div>
+
+      <div class="inlineField">
+        <label for="importanceInput">Importance:</label>
+        <input type="range" min="1" max="10" id="importanceInput" />
+        <span id="importanceVal" class="rangeValue"></span>
+      </div>
+
+      <div class="inlineField">
+        <label for="dueDateInput">Due Date:</label>
+        <input type="datetime-local" id="dueDateInput" />
+      </div>
+
+      <div class="sectionHeader">Notes</div>
+      <div class="notesList" id="notesList"></div>
+      <button id="btnAddNote">Add Note</button>
+
+      <div class="sectionHeader">Relationships</div>
+      <div class="relationshipsList" id="relationshipsList"></div>
+      <button id="btnAddRelationship">Add Relationship</button>
+    </div>
+  </div>
+
+  <!-- ===== RELATIONSHIP MODAL ===== -->
+  <div id="relationshipModal" class="modal hidden">
+    <div class="modalContent">
+      <h3>Add / Remove Relationship</h3>
+      
+      <label for="relationshipTypeSelect">Type:</label>
+      <select id="relationshipTypeSelect">
+        <!-- We'll populate in JS -->
+      </select>
+
+      <label for="relationshipTaskSelect">Other Task:</label>
+      <select id="relationshipTaskSelect">
+        <!-- We'll populate in JS with tasks' titles -->
+      </select>
+
+      <div class="modalButtons">
+        <button id="btnRelationshipOk">OK</button>
+        <button id="btnRelationshipCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FILE INPUT (HIDDEN) ===== -->
+  <input type="file" id="fileImport" accept=".json" style="display:none" />
+
+  <!-- Link JS -->
+  <script src="js/task-master.0.js"></script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+/* BASIC LAYOUT */
+* {
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+body {
+  margin: 0; 
+  padding: 0; 
+  height: 100vh; 
+  display: flex; 
+  flex-direction: column;
+}
+#app {
+  flex: 1; 
+  display: flex; 
+  overflow: hidden;
+}
+
+/* SIDEBAR */
+#sidebar {
+  width: 300px;
+  background-color: #f7f7f7;
+  border-right: 1px solid #ccc;
+  display: flex;
+  flex-direction: column;
+}
+#sidebarHeader {
+  padding: 0.5rem; 
+  background: #ececec; 
+  border-bottom: 1px solid #ccc;
+}
+#workspaceControls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+#workspaceSelector {
+  flex: 1;
+}
+#searchBox {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+#sidebarCommands {
+  display: flex; 
+  gap: 0.5rem; 
+  margin-bottom: 0.5rem;
+}
+#sidebarContent {
+  flex: 1; 
+  overflow-y: auto; 
+  padding: 0.5rem;
+}
+.taskItem {
+  padding: 0.25rem 0.5rem;
+  margin: 0.25rem 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.taskItem:hover {
+  background-color: #ddd;
+}
+.taskItem.selected {
+  background-color: #ccc;
+}
+
+/* MAIN PANEL */
+#mainPanel {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+}
+.sectionHeader {
+  font-weight: bold; 
+  margin-top: 1rem; 
+  margin-bottom: 0.5rem;
+}
+.inlineField {
+  display: flex; 
+  gap: 0.5rem; 
+  margin-bottom: 0.5rem; 
+  align-items: center;
+}
+.inlineField label {
+  width: 100px; 
+  font-weight: bold;
+}
+.inlineField input[type="text"],
+.inlineField textarea,
+.inlineField select {
+  flex: 1;
+  padding: 0.25rem;
+}
+textarea {
+  resize: vertical;
+}
+button {
+  cursor: pointer;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #999;
+  background-color: #eee;
+  border-radius: 3px;
+}
+button:hover {
+  background-color: #ddd;
+}
+button:disabled {
+  opacity: 0.5; 
+  cursor: not-allowed;
+}
+.rangeValue {
+  width: 30px;
+  text-align: center;
+}
+
+/* NOTES */
+.notesList {
+  margin-top: 0.5rem; 
+  border: 1px solid #ccc; 
+  padding: 0.5rem; 
+  min-height: 50px;
+}
+.noteItem {
+  border-bottom: 1px solid #ccc; 
+  padding: 0.5rem 0;
+}
+.noteItem:last-child {
+  border-bottom: none;
+}
+.noteControls {
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+/* RELATIONSHIPS */
+.relationshipsList {
+  margin-top: 0.5rem; 
+  border: 1px solid #ccc; 
+  padding: 0.5rem; 
+  min-height: 50px;
+}
+.relationshipItem {
+  border-bottom: 1px solid #ccc; 
+  padding: 0.5rem 0;
+}
+.relationshipItem:last-child {
+  border-bottom: none;
+}
+
+/* FILTER BAR */
+#filterBar {
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+#filterBar.hidden {
+  display: none !important;
+}
+.filterRow {
+  display: flex; 
+  align-items: center; 
+  gap: 0.5rem;
+}
+.filterRow label {
+  width: 80px;
+  flex-shrink: 0;
+}
+.filterSlider {
+  flex: 1;
+}
+
+/* MODAL */
+.modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.modal.hidden {
+  display: none;
+}
+.modalContent {
+  background: #fff;
+  padding: 1rem;
+  border-radius: 4px;
+  min-width: 300px;
+}
+.modalButtons {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
