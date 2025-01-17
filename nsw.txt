@@ -1,0 +1,57 @@
+The Domain Name System (DNS) translates human-readable domain names (e.g., example.com) into IP addresses (e.g., 192.168.1.1), which are used by computers to locate and communicate with each other on a network.
+
+How It Works:
+Query Initiation: When you enter a domain name in a browser, the system sends a DNS query to resolve the name.
+Recursive Resolver: Your device contacts a recursive DNS resolver (often provided by your ISP or a public DNS like Google DNS).
+Root Servers: The resolver queries a root DNS server to find the appropriate top-level domain (TLD) server (e.g., .com).
+TLD Servers: The TLD server directs the resolver to the authoritative server for the specific domain.
+Authoritative Server: This server provides the IP address for the domain.
+Response: The resolver returns the IP address to your device, which then uses it to connect to the server hosting the website or service.
+This process happens in milliseconds and allows seamless access to web services using user-friendly names instead of numeric IP addresses.
+
+Troubleshooting an Inaccessible Website
+Check Server Availability: Use ping or tracert to confirm the server is reachable.
+Verify DNS Resolution: Ensure the domain resolves to the correct IP address using nslookup.
+Inspect IIS Configuration: Check site bindings, SSL certificates, and application pool status.
+Examine Logs: Review IIS logs and application logs for errors (e.g., HTTP 500, authentication failures).
+Test Locally: Access the site from the server itself to rule out external network issues.
+
+Troubleshooting an Intermittently Failing Scheduled Task
+Review Task History: Enable history for the task and check for error messages or failure codes.
+Check Dependencies: Ensure all required files, databases, or network resources are available at runtime.
+Inspect Script/Executable: Test the script or executable manually and check for runtime errors.
+Monitor System Resources: Identify resource contention (e.g., high CPU, memory usage) during execution.
+Enable Logging: Add verbose logging to the task/script to capture additional details for debugging.
+
+General Knowledge
+1. DNS and Domain Name Resolution
+Purpose: DNS translates human-readable domain names into IP addresses for communication between devices.
+Troubleshooting DNS Issues:
+Use nslookup or dig to check if the domain resolves to the correct IP.
+Verify DNS settings on the local system (e.g., DNS server addresses).
+Check for propagation delays or misconfigured DNS records (A, CNAME, etc.).
+2. Troubleshooting Network Connectivity
+Diagnosing Connectivity Issues:
+Use ping to test basic reachability between systems.
+Use tracert (Windows) or traceroute (Linux) to identify network path issues or bottlenecks.
+Resolving Latency/Packet Loss:
+Check for overloaded network devices or bad links (e.g., using a network monitoring tool).
+Identify and resolve bandwidth issues or misconfigurations (e.g., QoS or MTU size).
+
+Problem Solving - Authentication Issues
+Verify Whether the Issue is on the User’s Side or Server-Side:
+
+Confirm the user’s credentials are correct and not expired.
+Test authentication using another known working account or device.
+Check for client-side issues like incorrect domain settings or cached credentials.
+Debug Potential Active Directory or Application Configuration Problems:
+
+Verify the application’s connection to Active Directory (e.g., using tools like ldp.exe or ADExplorer).
+Check for misconfigured authentication methods (e.g., Kerberos vs. NTLM) or expired service accounts.
+Review group membership and permissions for the user in Active Directory.
+Handle Situations Where the Issue Affects Multiple Users or Systems:
+
+Investigate if the issue is related to domain controller replication or network connectivity.
+Check server logs for common errors (e.g., Event Viewer’s Security or Application logs).
+Ensure that any recent changes to authentication configurations or policies are reverted or corrected.
+
