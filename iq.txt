@@ -1,0 +1,48 @@
+
+General Knowledge - Networking Basics
+DNS and Domain Name Resolution
+Explain the purpose of DNS and how domain names are resolved into IP addresses.
+Describe the role of DNS records (A, CNAME, MX, etc.) and how they are configured.
+How would you troubleshoot DNS-related issues, such as a domain name not resolving properly?
+Troubleshooting Network Connectivity
+Use tools like ping, tracert, or pathping to diagnose connectivity issues.
+Describe how to troubleshoot a situation where a server cannot connect to another server, even though the network is operational.
+Resolve latency or packet loss issues in a network environment.
+System Administration
+IIS Configuration and Troubleshooting
+Configure a new website in IIS, including bindings for HTTP, HTTPS, and custom ports.
+Add an SSL certificate to a website in IIS.
+Manage multiple IIS sites on the same server while avoiding port conflicts.
+Identify root causes of HTTP errors like 404, 403, or 500 in IIS.
+Use tools or logs for diagnosing IIS issues (e.g., Failed Request Tracing, Event Viewer).
+Handle application pool crashes or high memory usage in IIS.
+Scheduled Tasks and Automation Using PowerShell
+Monitor Windows Scheduled Tasks to ensure they execute reliably.
+Identify the cause of failed tasks, such as enabling task history or checking for dependencies.
+Debug recurring failures in critical scheduled tasks.
+Write PowerShell scripts to automate repetitive tasks, such as file backups or service restarts.
+Provide an example of a complex script used to simplify a multi-step process.
+Manage credentials securely in PowerShell scripts when accessing resources like databases or remote servers.
+Security & Monitoring
+Active Directory Integration
+Integrate an application with Active Directory for user authentication.
+Explain the difference between Kerberos and NTLM authentication, and when to use each.
+Manage and audit permissions for service accounts in Active Directory.
+Problem Solving
+Scenario-Based Troubleshooting
+Website Not Accessible: A website hosted in IIS is not accessible, but the server is reachable.
+Identify the issue through DNS, IIS configuration, or application logs.
+Use tools and logs (e.g., IIS logs, application logs) to diagnose the issue.
+Scheduled Task Intermittently Failing: A scheduled task intermittently fails to execute.
+Determine whether the issue is related to resource contention, permissions, or task configuration.
+Use tools or techniques to diagnose and resolve the issue, such as enabling verbose logging.
+Prevent similar failures in the future.
+Authentication Issues: A user reports being unable to access an application due to authentication problems.
+Verify whether the issue is on the user’s side or server-side.
+Debug potential Active Directory or application configuration problems.
+Handle situations where the issue affects multiple users or systems.
+Soft Skills
+Handling Cross-Discipline Tasks
+Describe a time when you stepped outside your primary expertise to assist a team member or resolve a critical issue.
+Explain how you approach working on tasks that span multiple domains (e.g., development, system administration, database management).
+Ensure effective communication and documentation when collaborating with teams that have different technical specialties.
